@@ -3,9 +3,10 @@ from groq import Groq # type: ignore
 import base64
 from streamlit_google_auth import Authenticate
 
+
 # --- 1. GOOGLE AUTHENTICATION SETUP ---
+# Mehema daddi TypeError eka enne na
 auth = Authenticate(
-    secret_credentials_path=None, 
     cookie_name='honorgpt_cookie',
     cookie_key='honorgpt_secret_key',
     client_id=st.secrets["google_auth"]["client_id"],
@@ -13,6 +14,7 @@ auth = Authenticate(
     redirect_uri='https://siri-ai-tool-nci8jzgzzw95njjeur2bp9.streamlit.app/',
 )
 
+# Authentication check kirima
 auth.check_authenticator()
 
 # User log wela naththan login pennanna
@@ -111,5 +113,6 @@ if prompt := st.chat_input("What do you need to know?"):
             
         except Exception as e:
             st.error(f"Error: {e}")
+
 
 
