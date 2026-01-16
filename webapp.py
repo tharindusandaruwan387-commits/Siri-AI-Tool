@@ -2,7 +2,6 @@ import streamlit as st # type: ignore
 from huggingface_hub import InferenceClient
 import base64
 
-# 1. Page Configuration - Sidebar එක හැමවෙලේම පේන්න "expanded" කළා
 st.set_page_config(
     page_title="Honorgpt", 
     page_icon="logo.jpg", 
@@ -10,21 +9,17 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# CSS - පෙනුම පිරිසිදු කිරීමට සහ Sidebar අයිකන හැදීමට
 st.markdown("""
     <style>
-    /* අනවශ්‍ය දේවල් අයින් කිරීම */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     .stDeployButton {display:none;}
     [data-testid="stStatusWidget"] {display: none !important;}
     [data-testid="stToolbar"] {display: none !important;}
     
-    /* දකුණු පැත්තේ යට තියෙන Icons අයින් කිරීම */
     div[data-testid="stStatusWidget"] {display: none !important;}
     header {visibility: hidden;}
     
-    /* Sidebar එකේ Hamburger icon එක සුදු පාටින් පෙන්වීම */
     [data-testid="stSidebarNav"] {display: none;}
     [data-testid="openSidebar"] {
         display: block !important;
@@ -40,7 +35,6 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# Sidebar
 with st.sidebar:
     st.image("logo.jpg", width=150)
     st.title("Honorgpt Settings")
@@ -51,10 +45,8 @@ with st.sidebar:
     if st.button("Settings", use_container_width=True):
         st.toast("Settings coming soon!")
 
-# Main Content
 st.markdown("<h1 class='centered-title'>Honorgpt</h1>", unsafe_allow_html=True)
 
-# AI Logic
 client = InferenceClient(api_key=st.secrets["HF_TOKEN"])
 
 if "messages" not in st.session_state:
@@ -94,3 +86,4 @@ if prompt := st.chat_input("What do you need to know?"):
                 st.error("Too many requests. Please try again later.")
             else:
                 st.error(f"Error: {e}")
+
