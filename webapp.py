@@ -8,35 +8,39 @@ st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
-    header {visibility: hidden;}
     .stDeployButton {display:none;}
-    [data-testid="stToolbar"] {display: none !important;}
+    [data-testid="stStatusWidget"] {display: none;}
     
+    /* Show Sidebar Icon but hide other header elements */
+    header {visibility: visible !important; background: transparent !important;}
+    [data-testid="stHeader"] > div:first-child {visibility: hidden;}
+    [data-testid="stToolbar"] {visibility: hidden !important;}
+
     .centered-title {
         text-align: center;
-        padding: 10px;
+        padding: 5px;
         font-family: 'Segoe UI', sans-serif;
         color: white;
-        margin-top: -50px; /
     }
-
-    .sidebar-footer {
-        position: fixed;
-        bottom: 20px;
-        width: 260px;
+    
+    /* Settings button at bottom */
+    [data-testid="stSidebarUserContent"] {
+        display: flex;
+        flex-direction: column;
+        height: 85vh;
     }
     </style>
     """, unsafe_allow_html=True)
 
 with st.sidebar:
     st.image("logo.jpg", width=150)
-    st.title("🤖 Honorgpt")
+    st.title("Honorgpt")
     st.write("Created by Tharindu Sandaruwan")
     st.info("The brilliant Tharindu's AI Assistant")
-
-    st.markdown("<br>" * 10, unsafe_allow_html=True) 
-    if st.button("⚙️ Settings", use_container_width=True):
-        st.write("Settings coming soon...")
+    
+    st.markdown("<br>" * 10, unsafe_allow_html=True)
+    if st.button("Settings", use_container_width=True):
+        st.toast("Settings coming soon!")
 
 st.markdown("<h1 class='centered-title'>Honorgpt</h1>", unsafe_allow_html=True)
 
@@ -75,4 +79,7 @@ if prompt := st.chat_input("What do you need to know?"):
             message_placeholder.markdown(response_text)
             st.session_state.messages.append({"role": "assistant", "content": response_text})
         except Exception as e:
-            st.error(f"Error: {e}")
+            if "429" in str(e):
+                st.error("Too many requests. Please try again in a few minutes.")
+            else:
+                st.error(f"Error: {e}")
