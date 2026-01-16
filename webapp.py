@@ -1,121 +1,86 @@
 import streamlit as st
-from groq import Groq # type: ignore
+from groq import Groq
 import base64
 from streamlit_google_auth import Authenticate
 
+# --- 1. PAGE CONFIG (Meka thama 1st line eka wenna ona) ---
+st.set_page_config(page_title="HonorGPT", page_icon="🤖", layout="wide")
 
-# --- 1. GOOGLE AUTHENTICATION SETUP ---
+# --- 2. GOOGLE AUTHENTICATION SETUP ---
 auth = Authenticate(
     cookie_name='honorgpt_cookie',
     cookie_key='honorgpt_secret_key',
-    client_id=st.secrets["google_auth"]["client_id"], # Methana "_" danna
-    client_secret=st.secrets["google_auth"]["client_secret"], # Methana "_" danna
+    client_id=st.secrets["google_auth"]["client_id"],
+    client_secret=st.secrets["google_auth"]["client_secret"],
     redirect_uri='https://siri-ai-tool-nci8jzgzzw95njjeur2bp9.streamlit.app/',
 )
 
+# Login status check kirima
 auth.check_authenticator()
 
-
-# User log wela naththan login pennanna
+# User log wela naththan Login Screen eka pennanna
 if not st.session_state.get('connected'):
-    st.markdown("<h1 style='text-align: center;'>Welcome to Honorgpt</h1>", unsafe_allow_html=True)
-    st.write("Please login with your Gmail to continue.")
-    auth.login('Login with Google', 'main')
-    st.stop() # Login wenakan pahala code eka run wenne na
-
-# --- LOGGED IN USERS TA WITARAK PAHALA TIKA PENWA ---
-
-# 2. Page Configuration
-st.set_page_config(page_title="Honorgpt", page_icon="logo.jpg", layout="wide")
-
-# Function to convert image to base64 for avatars
-def get_base64_image(image_path):
-    with open(image_path, "rb") as img_file:
-        return base64.b64encode(img_file.read()).decode()
-
-# Load your logo as avatar
-logo_base64 = get_base64_image("logo.jpg")
-ai_avatar = f"data:image/jpeg;base64,{logo_base64}"
-
-# CSS for WhatsApp style chat and UI cleaning
-st.markdown(f"""
-<style>
-    #MainMenu {{visibility: hidden;}}
-    footer {{visibility: hidden;}}
-    .centered-title {{
-        text-align: center;
-        padding: 20px;
-        font-family: 'Segoe UI', sans-serif;
-        color: white;
-        font-size: 3rem;
-        font-weight: bold;
-    }}
-    /* WhatsApp style chat bubbles placeholder - Oya kalin dapu CSS tika methana thiyenna ona */
-</style>
-""", unsafe_allow_html=True)
-
-# Sidebar
-with st.sidebar:
-    st.image("logo.jpg", width=150)
-    st.title("Honorgpt Settings")
-    st.write(f"Logged in as: {st.session_state['name']}")
-    auth.logout('Logout', 'sidebar') # Logout button eka side bar ekata damma
-
-# Main Title
-st.markdown("<h1 class='centered-title'>Honorgpt</h1>", unsafe_allow_html=True)
-
-# AI Logic
-try:
-    client = Groq(api_key=st.secrets["GROQ_API_KEY"])
-except Exception as e:
-    st.error("Missing GROQ_API_KEY in Streamlit Secrets!")
+    st.markdown("""
+        <div style='text-align: center; padding: 50px;'>
+            <h1>Welcome to HonorGPT 🤖</h1>
+            <p>Please login with your Google account to continue.</p>
+        </div>
+    """, unsafe_allow_html=True)
+    auth.login()
     st.stop()
 
+# --- 3. AI TOOL INTERFACE (Log unama thama meka pennanne) ---
+
+# Side bar eke Logout button eka
+with st.sidebar:
+    st.image("https://cdn-icons-png.flaticon.com/512/6134/6134346.png", width=100)
+    st.title("HonorGPT Settings")
+    st.write(f"User: {st.session_state.get('user_info', {}).get('name')}")
+    if st.button("Log Out"):
+        auth.logout()
+        st.rerun()
+
+# Main Chat Interface
+st.title("🤖 HonorGPT AI Assistant")
+
+# --- METHANA INDAN OYAGE GROQ CHAT LOGIC EKA ---
+
+# Groq Client setup (Secrets walin API Key eka gannawa)
+# Mathaka athuwa 'GROQ_API_KEY' kiyala ekakuth Secrets walata danna
+client = Groq(api_key=st.secrets.get("GROQ_API_KEY", "OYAGE_API_KEY_EKA_METHANATA"))
+
+# Chat history eka initialize kirima
 if "messages" not in st.session_state:
-    st.session_state.messages = [
-        {"role": "system", "content": "You are Honorgpt, a fast AI assistant created by Tharindu Sandaruwan."}
-    ]
+    st.session_state.messages = []
 
-# Display chat history
+# Parana messages pennanna
 for message in st.session_state.messages:
-    if message["role"] == "user":
-        with st.chat_message("user"):
-            st.markdown(message["content"])
-    elif message["role"] == "assistant":
-        with st.chat_message("assistant", avatar=ai_avatar):
-            st.markdown(message["content"])
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
 
-# Chat input
-if prompt := st.chat_input("What do you need to know?"):
+# User input ganna thana
+if prompt := st.chat_input("Ask HonorGPT anything..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    with st.chat_message("assistant", avatar=ai_avatar):
+    # AI Response eka ganna thana
+    with st.chat_message("assistant"):
         response_placeholder = st.empty()
         full_response = ""
         
-        try:
-            completion = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=st.session_state.messages,
-                stream=True,
-            )
-            for chunk in completion:
-                content = chunk.choices[0].delta.content
-                if content:
-                    full_response += content
-                    response_placeholder.markdown(full_response + "▌")
-            
-            response_placeholder.markdown(full_response)
-            st.session_state.messages.append({"role": "assistant", "content": full_response})
-            
-        except Exception as e:
-            st.error(f"Error: {e}")
-
-
-
-
-
-
-
+        # Groq API eken response eka gannawa
+        completion = client.chat.completions.create(
+            model="llama3-8b-8192",
+            messages=[{"role": m["role"], "content": m["content"]} for m in st.session_state.messages],
+            stream=True,
+        )
+        
+        for chunk in completion:
+            if chunk.choices[0].delta.content:
+                full_response += chunk.choices[0].delta.content
+                response_placeholder.markdown(full_response + "▌")
+        
+        response_placeholder.markdown(full_response)
+    
+    st.session_state.messages.append({"role": "assistant", "content": full_response})
