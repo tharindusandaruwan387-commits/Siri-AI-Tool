@@ -1,8 +1,28 @@
 import streamlit as st
-from groq import Groq
+from groq import Groq # type: ignore
 import base64
+from streamlit_google_auth import Authenticate
 
-# 1. Page Configuration
+# --- 1. GOOGLE AUTHENTICATION SETUP ---
+auth = Authenticate(
+    secret_credentials_path='google_credentials.json',
+    cookie_name='honorgpt_cookie',
+    cookie_key='honorgpt_secret_key',
+    redirect_uri='https://siri-ai-tool-nci8jzgzzw95njjeur2bp9.streamlit.app/',
+)
+
+auth.check_authenticator()
+
+# User log wela naththan login pennanna
+if not st.session_state.get('connected'):
+    st.markdown("<h1 style='text-align: center;'>Welcome to Honorgpt</h1>", unsafe_allow_html=True)
+    st.write("Please login with your Gmail to continue.")
+    auth.login('Login with Google', 'main')
+    st.stop() # Login wenakan pahala code eka run wenne na
+
+# --- LOGGED IN USERS TA WITARAK PAHALA TIKA PENWA ---
+
+# 2. Page Configuration
 st.set_page_config(page_title="Honorgpt", page_icon="logo.jpg", layout="wide")
 
 # Function to convert image to base64 for avatars
@@ -16,31 +36,9 @@ ai_avatar = f"data:image/jpeg;base64,{logo_base64}"
 
 # CSS for WhatsApp style chat and UI cleaning
 st.markdown(f"""
-    <style>
-    /* Hide unwanted elements */
+<style>
     #MainMenu {{visibility: hidden;}}
     footer {{visibility: hidden;}}
-    .stDeployButton {{display:none;}}
-    [data-testid="stStatusWidget"] {{display: none;}}
-    [data-testid="stToolbar"] > div:not(:first-child) {{display: none !important;}}
-    header[data-testid="stHeader"] {{background: transparent !important; visibility: visible !important;}}
-
-    /* WhatsApp Style Chat Bubbles */
-    [data-testid="stChatMessage"] {{
-        background-color: transparent !important;
-    }}
-    
-    /* User Message (Right Side) */
-    .st-emotion-cache-janbn0 {{
-        flex-direction: row-reverse !important;
-        text-align: right !important;
-    }}
-    
-    /* Assistant Message (Left Side) */
-    .st-emotion-cache-1c7n2ka {{
-        flex-direction: row !important;
-    }}
-
     .centered-title {{
         text-align: center;
         padding: 20px;
@@ -49,17 +47,16 @@ st.markdown(f"""
         font-size: 3rem;
         font-weight: bold;
     }}
-    </style>
-    """, unsafe_allow_html=True)
+    /* WhatsApp style chat bubbles placeholder - Oya kalin dapu CSS tika methana thiyenna ona */
+</style>
+""", unsafe_allow_html=True)
 
 # Sidebar
 with st.sidebar:
     st.image("logo.jpg", width=150)
     st.title("Honorgpt Settings")
-    st.write("Created by Tharindu Sandaruwan")
-    st.markdown("<br>" * 10, unsafe_allow_html=True)
-    if st.button("Settings", use_container_width=True):
-        st.toast("Settings coming soon!")
+    st.write(f"Logged in as: {st.session_state['name']}")
+    auth.logout('Logout', 'sidebar') # Logout button eka side bar ekata damma
 
 # Main Title
 st.markdown("<h1 class='centered-title'>Honorgpt</h1>", unsafe_allow_html=True)
@@ -76,7 +73,7 @@ if "messages" not in st.session_state:
         {"role": "system", "content": "You are Honorgpt, a fast AI assistant created by Tharindu Sandaruwan."}
     ]
 
-# Display chat with custom avatars and side alignment
+# Display chat history
 for message in st.session_state.messages:
     if message["role"] == "user":
         with st.chat_message("user"):
@@ -109,5 +106,6 @@ if prompt := st.chat_input("What do you need to know?"):
             
             response_placeholder.markdown(full_response)
             st.session_state.messages.append({"role": "assistant", "content": full_response})
+            
         except Exception as e:
             st.error(f"Error: {e}")
