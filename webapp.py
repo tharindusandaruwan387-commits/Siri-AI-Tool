@@ -6,6 +6,15 @@ st.set_page_config(page_title="Honorgpt", page_icon="logo.jpg", layout="wide")
 
 st.markdown("""
     <style>
+    .stApp {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    
+    [data-testid="stSidebar"] {
+        background-color: #1a1a1a;
+    }
+
     .round-image {
         border-radius: 50%;
         overflow: hidden;
@@ -15,15 +24,13 @@ st.markdown("""
         border: 3px solid #FF4B4B;
         box-shadow: 0px 4px 10px rgba(0,0,0,0.3);
     }
+
     .main-header {
         display: flex;
         align-items: center;
         gap: 20px;
         margin-bottom: 30px;
-    }
-    /* පරණ streamlit title එකේ icon එක අයින් කිරීමට */
-    .stTitle > header {
-        display: none;
+        padding-top: 20px;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -32,8 +39,7 @@ def get_image_base64(path):
     try:
         with open(path, "rb") as img_file:
             return base64.b64encode(img_file.read()).decode()
-    except:
-        return ""
+    except: return ""
 
 with st.sidebar:
     st.image("logo.jpg", width=150)
@@ -53,7 +59,7 @@ client = InferenceClient(api_key=st.secrets["HF_TOKEN"])
 
 if "messages" not in st.session_state:
     st.session_state.messages = [
-        {"role": "system", "content": "You are Honorgpt, a personal assistant created by Tharindu Sandaruwan."}
+        {"role": "system", "content": "You are Honorgpt, created by Tharindu Sandaruwan."}
     ]
 
 for message in st.session_state.messages:
