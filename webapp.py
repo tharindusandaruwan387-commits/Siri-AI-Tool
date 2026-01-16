@@ -1,10 +1,14 @@
 import streamlit as st # type: ignore
 from huggingface_hub import InferenceClient
 
-st.set_page_config(page_title="Siri AI - My First AI Tool",
-page_icon="🗿")
-st.title("🗿 Siri AI Personal Assistant")
-st.markdown("How can I help you?")
+st.set_page_config(page_title="Siri AI", page_icon="🤖")
+
+with st.sidebar:
+    st.title("🤖 Siri AI Settings")
+    st.write("Created by Tharindu")
+    st.info("Llama 3.2 Powered Personal Assistant")
+
+st.title("🤖 Siri AI Personal Assistant")
 
 client = InferenceClient(api_key=st.secrets["HF_TOKEN"])
 
@@ -21,14 +25,20 @@ if prompt := st.chat_input("What do you need to know?"):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        response = client.chat_completion(
-            model="meta-llama/Llama-3.2-3B-Instruct", #
+        response_text = ""
+        message_placeholder = st.empty() 
+        
+        stream = client.chat_completion(
+            model="meta-llama/Llama-3.2-3B-Instruct",
             messages=st.session_state.messages,
             max_tokens=500,
+            stream=True
         )
-        answer = response.choices[0].message.content
-        st.markdown(answer)
-        st.session_state.messages.append({"role": "assistant", "content": answer})
 
-
-        st.rerun()
+        for chunk in stream:
+            token = chunk.choices[0].delta.content
+            response_text += token
+            message_placeholder.markdown(response_text + "▌")
+        
+        message_placeholder.markdown(response_text)
+        st.session_state.messages.append({"role": "assistant", "content": response_text})
