@@ -6,7 +6,7 @@ page_icon="🗿")
 st.title("🗿 Siri AI Personal Assistant")
 st.markdown("How can I help you?")
 
-client = InferenceClient(api_key="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")
+client = InferenceClient(api_key=st.secrets["HF_TOKEN"])
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -29,5 +29,6 @@ if prompt := st.chat_input("What do you need to know?"):
         answer = response.choices[0].message.content
         st.markdown(answer)
         st.session_state.messages.append({"role": "assistant", "content": answer})
+
 
         st.rerun()
