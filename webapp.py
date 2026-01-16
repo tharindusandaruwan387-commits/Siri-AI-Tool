@@ -28,17 +28,21 @@ if prompt := st.chat_input("What do you need to know?"):
         response_text = ""
         message_placeholder = st.empty() 
         
-        stream = client.chat_completion(
-            model="meta-llama/Llama-3.2-3B-Instruct",
-            messages=st.session_state.messages,
-            max_tokens=500,
-            stream=True
-        )
+        try:
+            stream = client.chat_completion(
+                model="meta-llama/Llama-3.2-3B-Instruct",
+                messages=st.session_state.messages,
+                max_tokens=500,
+                stream=True 
+            )
 
-        for chunk in stream:
-            token = chunk.choices[0].delta.content
-            response_text += token
-            message_placeholder.markdown(response_text + "▌")
-        
-        message_placeholder.markdown(response_text)
-        st.session_state.messages.append({"role": "assistant", "content": response_text})
+            for chunk in stream:
+                if chunk.choices[0].delta.content is not None:
+                    token = chunk.choices[0].delta.content
+                    response_text += token
+                    message_placeholder.markdown(response_text + "▌")
+                    
+            message_placeholder.markdown(response_text)
+            st.session_state.messages.append({"role": "assistant", "content": response_text})
+        except Exception as e:
+            st.error(f"Error: {e}")
