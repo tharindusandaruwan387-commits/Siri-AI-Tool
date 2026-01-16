@@ -6,28 +6,29 @@ st.set_page_config(page_title="Honorgpt", page_icon="logo.jpg", layout="wide")
 
 st.markdown("""
     <style>
+    /* 1. Hide unwanted elements */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     .stDeployButton {display:none;}
     [data-testid="stStatusWidget"] {display: none;}
+    [data-testid="stToolbar"] {display: none !important;}
     
-    /* Show Sidebar Icon but hide other header elements */
-    header {visibility: visible !important; background: transparent !important;}
-    [data-testid="stHeader"] > div:first-child {visibility: hidden;}
-    [data-testid="stToolbar"] {visibility: hidden !important;}
+    /* 2. Fix Sidebar Toggle Icon visibility */
+    header[data-testid="stHeader"] {
+        background-color: rgba(0,0,0,0) !important;
+        color: white !important;
+    }
+    
+    /* Hide only the right-side buttons in the header */
+    [data-testid="stHeader"] > div:last-child {
+        display: none !important;
+    }
 
     .centered-title {
         text-align: center;
         padding: 5px;
         font-family: 'Segoe UI', sans-serif;
         color: white;
-    }
-    
-    /* Settings button at bottom */
-    [data-testid="stSidebarUserContent"] {
-        display: flex;
-        flex-direction: column;
-        height: 85vh;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -80,6 +81,6 @@ if prompt := st.chat_input("What do you need to know?"):
             st.session_state.messages.append({"role": "assistant", "content": response_text})
         except Exception as e:
             if "429" in str(e):
-                st.error("Too many requests. Please try again in a few minutes.")
+                st.error("Too many requests. Please try again in 1 minute.")
             else:
                 st.error(f"Error: {e}")
