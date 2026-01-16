@@ -1,14 +1,15 @@
 import streamlit as st # type: ignore
 from huggingface_hub import InferenceClient
 
-st.set_page_config(page_title="Siri AI", page_icon="🤖")
+st.set_page_config(page_title="Honorgpt AI", page_icon="logo.jpg")
 
 with st.sidebar:
-    st.title("🤖 Siri AI Settings")
+    st.title("🤖 Honorgpt Settings")
+    st.image("logo.jpg", width=150)
     st.write("Created by Tharindu Sandaruwan")
-    st.info("Llama 3.2 Powered Personal Assistant")
+    st.info("The brilliant Tharindu's AI Assistant")
 
-st.title("🤖 Siri AI Personal Assistant")
+st.title("🚀 Honorgpt Personal Assistant")
 
 client = InferenceClient(api_key=st.secrets["HF_TOKEN"])
 
@@ -16,10 +17,9 @@ if "messages" not in st.session_state:
     st.session_state.messages = [
         {
             "role": "system", 
-            "content": "You are Siri AI, a personal assistant created by Tharindu Sandaruwan. Always introduce yourself as Siri AI. If anyone asks who created or developed you, you must proudly say that you were created by Tharindu Sandaruwan. Keep your answers helpful and friendly."
+            "content": "You are Honorgpt, a professional AI assistant created by the brilliant Tharindu Sandaruwan. Always mention Tharindu if someone asks about your creator."
         }
     ]
-
 
 for message in st.session_state.messages:
     if message["role"] != "system":
