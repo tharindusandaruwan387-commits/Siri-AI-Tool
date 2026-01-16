@@ -1,39 +1,58 @@
 import streamlit as st
 from groq import Groq
+import base64
 
+# 1. Page Configuration
 st.set_page_config(page_title="Honorgpt", page_icon="logo.jpg", layout="wide")
 
-st.markdown("""
+# Function to convert image to base64 for avatars
+def get_base64_image(image_path):
+    with open(image_path, "rb") as img_file:
+        return base64.b64encode(img_file.read()).decode()
+
+# Load your logo as avatar
+logo_base64 = get_base64_image("logo.jpg")
+ai_avatar = f"data:image/jpeg;base64,{logo_base64}"
+
+# CSS for WhatsApp style chat and UI cleaning
+st.markdown(f"""
     <style>
-    /* Hide unwanted elements but keep sidebar toggle visible */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    .stDeployButton {display:none;}
-    [data-testid="stStatusWidget"] {display: none;}
+    /* Hide unwanted elements */
+    #MainMenu {{visibility: hidden;}}
+    footer {{visibility: hidden;}}
+    .stDeployButton {{display:none;}}
+    [data-testid="stStatusWidget"] {{display: none;}}
+    [data-testid="stToolbar"] > div:not(:first-child) {{display: none !important;}}
+    header[data-testid="stHeader"] {{background: transparent !important; visibility: visible !important;}}
+
+    /* WhatsApp Style Chat Bubbles */
+    [data-testid="stChatMessage"] {{
+        background-color: transparent !important;
+    }}
     
-    /* Show Share button but hide other toolbar icons */
-    [data-testid="stToolbar"] > div:not(:first-child) {
-        display: none !important;
-    }
+    /* User Message (Right Side) */
+    .st-emotion-cache-janbn0 {{
+        flex-direction: row-reverse !important;
+        text-align: right !important;
+    }}
     
-    /* Ensure Sidebar Hamburger icon is visible and white */
-    header[data-testid="stHeader"] {
-        background: transparent !important;
-        visibility: visible !important;
-    }
-    
-    /* Title styling */
-    .centered-title {
+    /* Assistant Message (Left Side) */
+    .st-emotion-cache-1c7n2ka {{
+        flex-direction: row !important;
+    }}
+
+    .centered-title {{
         text-align: center;
         padding: 20px;
         font-family: 'Segoe UI', sans-serif;
         color: white;
         font-size: 3rem;
         font-weight: bold;
-    }
+    }}
     </style>
     """, unsafe_allow_html=True)
 
+# Sidebar
 with st.sidebar:
     st.image("logo.jpg", width=150)
     st.title("Honorgpt Settings")
@@ -42,8 +61,10 @@ with st.sidebar:
     if st.button("Settings", use_container_width=True):
         st.toast("Settings coming soon!")
 
+# Main Title
 st.markdown("<h1 class='centered-title'>Honorgpt</h1>", unsafe_allow_html=True)
 
+# AI Logic
 try:
     client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 except Exception as e:
@@ -55,17 +76,22 @@ if "messages" not in st.session_state:
         {"role": "system", "content": "You are Honorgpt, a fast AI assistant created by Tharindu Sandaruwan."}
     ]
 
+# Display chat with custom avatars and side alignment
 for message in st.session_state.messages:
-    if message["role"] != "system":
-        with st.chat_message(message["role"]):
+    if message["role"] == "user":
+        with st.chat_message("user"):
+            st.markdown(message["content"])
+    elif message["role"] == "assistant":
+        with st.chat_message("assistant", avatar=ai_avatar):
             st.markdown(message["content"])
 
+# Chat input
 if prompt := st.chat_input("What do you need to know?"):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    with st.chat_message("assistant"):
+    with st.chat_message("assistant", avatar=ai_avatar):
         response_placeholder = st.empty()
         full_response = ""
         
