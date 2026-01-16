@@ -37,11 +37,11 @@ if prompt := st.chat_input("What do you need to know?"):
             )
 
             for chunk in stream:
-                if chunk.choices[0].delta.content is not None:
+                if len(chunk.choices) > 0 and chunk.choices[0].delta.content is not None:
                     token = chunk.choices[0].delta.content
                     response_text += token
                     message_placeholder.markdown(response_text + "▌")
-                    
+            
             message_placeholder.markdown(response_text)
             st.session_state.messages.append({"role": "assistant", "content": response_text})
         except Exception as e:
