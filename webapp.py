@@ -1,23 +1,28 @@
-import streamlit as st # type: ignore
-from huggingface_hub import InferenceClient
-import base64
+import streamlit as st
+from groq import Groq
 
 st.set_page_config(page_title="Honorgpt", page_icon="logo.jpg", layout="wide")
 
 st.markdown("""
     <style>
+    /* Hide unwanted elements but keep sidebar toggle visible */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     .stDeployButton {display:none;}
+    [data-testid="stStatusWidget"] {display: none;}
     
+    /* Show Share button but hide other toolbar icons */
     [data-testid="stToolbar"] > div:not(:first-child) {
         display: none !important;
     }
     
-    [data-testid="stHeader"] {
+    /* Ensure Sidebar Hamburger icon is visible and white */
+    header[data-testid="stHeader"] {
         background: transparent !important;
+        visibility: visible !important;
     }
-
+    
+    /* Title styling */
     .centered-title {
         text-align: center;
         padding: 20px;
@@ -33,18 +38,21 @@ with st.sidebar:
     st.image("logo.jpg", width=150)
     st.title("Honorgpt Settings")
     st.write("Created by Tharindu Sandaruwan")
-    
     st.markdown("<br>" * 10, unsafe_allow_html=True)
     if st.button("Settings", use_container_width=True):
         st.toast("Settings coming soon!")
 
 st.markdown("<h1 class='centered-title'>Honorgpt</h1>", unsafe_allow_html=True)
 
-client = InferenceClient(api_key=st.secrets["HF_TOKEN"])
+try:
+    client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+except Exception as e:
+    st.error("Missing GROQ_API_KEY in Streamlit Secrets!")
+    st.stop()
 
 if "messages" not in st.session_state:
     st.session_state.messages = [
-        {"role": "system", "content": "You are Honorgpt, created by Tharindu Sandaruwan."}
+        {"role": "system", "content": "You are Honorgpt, a fast AI assistant created by Tharindu Sandaruwan."}
     ]
 
 for message in st.session_state.messages:
@@ -58,24 +66,22 @@ if prompt := st.chat_input("What do you need to know?"):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        response_text = ""
-        message_placeholder = st.empty() 
+        response_placeholder = st.empty()
+        full_response = ""
+        
         try:
-            stream = client.chat_completion(
-                model="meta-llama/Llama-3.2-3B-Instruct",
+            completion = client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
                 messages=st.session_state.messages,
-                max_tokens=500,
-                stream=True 
+                stream=True,
             )
-            for chunk in stream:
-                if len(chunk.choices) > 0 and chunk.choices[0].delta.content is not None:
-                    token = chunk.choices[0].delta.content
-                    response_text += token
-                    message_placeholder.markdown(response_text + "▌")
-            message_placeholder.markdown(response_text)
-            st.session_state.messages.append({"role": "assistant", "content": response_text})
+            for chunk in completion:
+                content = chunk.choices[0].delta.content
+                if content:
+                    full_response += content
+                    response_placeholder.markdown(full_response + "▌")
+            
+            response_placeholder.markdown(full_response)
+            st.session_state.messages.append({"role": "assistant", "content": full_response})
         except Exception as e:
-            if "429" in str(e):
-                st.error("Model is busy. Please try again in a minute.")
-            else:
-                st.error(f"Error: {e}")
+            st.error(f"Error: {e}")
