@@ -2,26 +2,28 @@ import streamlit as st # type: ignore
 from huggingface_hub import InferenceClient
 import base64
 
+# 1. Page Configuration
 st.set_page_config(page_title="Honorgpt", page_icon="logo.jpg", layout="wide")
 
+# CSS - Sidebar icon එක පෙන්වීමට සහ අනවශ්‍ය දේවල් අයින් කිරීමට
 st.markdown("""
     <style>
-    /* 1. Hide unwanted elements */
+    /* 1. Hide unwanted Streamlit elements */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     .stDeployButton {display:none;}
-    [data-testid="stStatusWidget"] {display: none;}
     [data-testid="stToolbar"] {display: none !important;}
     
-    /* 2. Fix Sidebar Toggle Icon visibility */
-    header[data-testid="stHeader"] {
-        background-color: rgba(0,0,0,0) !important;
-        color: white !important;
-    }
+    /* 2. Hide "Manage app" and Status icons at bottom right */
+    [data-testid="stStatusWidget"] {display: none !important;}
+    .stApp > header {display: none !important;}
+    div[data-testid="stStatusWidget"] {display: none !important;}
+    footer {display: none !important;}
     
-    /* Hide only the right-side buttons in the header */
-    [data-testid="stHeader"] > div:last-child {
-        display: none !important;
+    /* 3. Force Sidebar Toggle (Hamburger icon) to be visible */
+    [data-testid="stSidebarCollapsedControl"] {
+        display: block !important;
+        color: white !important;
     }
 
     .centered-title {
@@ -33,6 +35,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
+# Sidebar layout
 with st.sidebar:
     st.image("logo.jpg", width=150)
     st.title("Honorgpt")
@@ -43,8 +46,10 @@ with st.sidebar:
     if st.button("Settings", use_container_width=True):
         st.toast("Settings coming soon!")
 
+# Main Header
 st.markdown("<h1 class='centered-title'>Honorgpt</h1>", unsafe_allow_html=True)
 
+# AI Logic
 client = InferenceClient(api_key=st.secrets["HF_TOKEN"])
 
 if "messages" not in st.session_state:
