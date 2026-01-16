@@ -5,7 +5,7 @@ st.set_page_config(page_title="Siri AI", page_icon="🤖")
 
 with st.sidebar:
     st.title("🤖 Siri AI Settings")
-    st.write("Created by Tharindu")
+    st.write("Created by Tharindu Sandaruwan")
     st.info("Llama 3.2 Powered Personal Assistant")
 
 st.title("🤖 Siri AI Personal Assistant")
@@ -13,11 +13,18 @@ st.title("🤖 Siri AI Personal Assistant")
 client = InferenceClient(api_key=st.secrets["HF_TOKEN"])
 
 if "messages" not in st.session_state:
-    st.session_state.messages = []
+    st.session_state.messages = [
+        {
+            "role": "system", 
+            "content": "You are Siri AI, a personal assistant created by Tharindu Sandaruwan. Always introduce yourself as Siri AI. If anyone asks who created or developed you, you must proudly say that you were created by Tharindu Sandaruwan. Keep your answers helpful and friendly."
+        }
+    ]
+
 
 for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
+    if message["role"] != "system":
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
 
 if prompt := st.chat_input("What do you need to know?"):
     st.session_state.messages.append({"role": "user", "content": prompt})
