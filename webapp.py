@@ -3,11 +3,11 @@ from groq import Groq # type: ignore
 import base64
 from streamlit_google_auth import Authenticate
 
-# Meka webapp.py eke authenticate section ekata danna
+# --- 1. GOOGLE AUTHENTICATION SETUP ---
 auth = Authenticate(
-    secret_credentials_path=None,  # Meka None karanna
+    secret_credentials_path=None, 
     cookie_name='honorgpt_cookie',
-    cookie_key='honorgpt_key_123',
+    cookie_key='honorgpt_secret_key',
     client_id=st.secrets["google_auth"]["client_id"],
     client_secret=st.secrets["google_auth"]["client_secret"],
     redirect_uri='https://siri-ai-tool-nci8jzgzzw95njjeur2bp9.streamlit.app/',
@@ -111,4 +111,5 @@ if prompt := st.chat_input("What do you need to know?"):
             
         except Exception as e:
             st.error(f"Error: {e}")
+
 
