@@ -5,7 +5,7 @@ from streamlit_google_auth import Authenticate
 
 
 # --- 1. GOOGLE AUTHENTICATION SETUP ---
-# Library eke aluth version ekata galapena widiyata:
+# Aluth version ekata galapena widiyata credentials path ain kara
 auth = Authenticate(
     cookie_name='honorgpt_cookie',
     cookie_key='honorgpt_secret_key',
@@ -14,7 +14,7 @@ auth = Authenticate(
     redirect_uri='https://siri-ai-tool-nci8jzgzzw95njjeur2bp9.streamlit.app/',
 )
 
-# Authentication check kirima
+# Login check kirima
 auth.check_authenticator()
 
 
@@ -114,6 +114,7 @@ if prompt := st.chat_input("What do you need to know?"):
             
         except Exception as e:
             st.error(f"Error: {e}")
+
 
 
 
