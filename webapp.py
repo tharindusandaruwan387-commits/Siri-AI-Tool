@@ -2,24 +2,31 @@ import streamlit as st # type: ignore
 from huggingface_hub import InferenceClient
 import base64
 
-st.set_page_config(page_title="Honorgpt", page_icon="logo.jpg", layout="wide")
+# 1. Page Configuration - Sidebar එක හැමවෙලේම පේන්න "expanded" කළා
+st.set_page_config(
+    page_title="Honorgpt", 
+    page_icon="logo.jpg", 
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
+# CSS - පෙනුම පිරිසිදු කිරීමට සහ Sidebar අයිකන හැදීමට
 st.markdown("""
     <style>
-    /* 1. Hide unwanted Streamlit elements */
+    /* අනවශ්‍ය දේවල් අයින් කිරීම */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     .stDeployButton {display:none;}
+    [data-testid="stStatusWidget"] {display: none !important;}
     [data-testid="stToolbar"] {display: none !important;}
     
-    /* 2. Hide "Manage app" and Status icons at bottom right */
-    [data-testid="stStatusWidget"] {display: none !important;}
-    .stApp > header {display: none !important;}
+    /* දකුණු පැත්තේ යට තියෙන Icons අයින් කිරීම */
     div[data-testid="stStatusWidget"] {display: none !important;}
-    footer {display: none !important;}
+    header {visibility: hidden;}
     
-    /* 3. Force Sidebar Toggle (Hamburger icon) to be visible */
-    [data-testid="stSidebarCollapsedControl"] {
+    /* Sidebar එකේ Hamburger icon එක සුදු පාටින් පෙන්වීම */
+    [data-testid="stSidebarNav"] {display: none;}
+    [data-testid="openSidebar"] {
         display: block !important;
         color: white !important;
     }
@@ -33,18 +40,21 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
+# Sidebar
 with st.sidebar:
     st.image("logo.jpg", width=150)
-    st.title("Honorgpt")
+    st.title("Honorgpt Settings")
     st.write("Created by Tharindu Sandaruwan")
     st.info("The brilliant Tharindu's AI Assistant")
     
-    st.markdown("<br>" * 10, unsafe_allow_html=True)
+    st.markdown("<br>" * 15, unsafe_allow_html=True)
     if st.button("Settings", use_container_width=True):
         st.toast("Settings coming soon!")
 
+# Main Content
 st.markdown("<h1 class='centered-title'>Honorgpt</h1>", unsafe_allow_html=True)
 
+# AI Logic
 client = InferenceClient(api_key=st.secrets["HF_TOKEN"])
 
 if "messages" not in st.session_state:
@@ -81,7 +91,6 @@ if prompt := st.chat_input("What do you need to know?"):
             st.session_state.messages.append({"role": "assistant", "content": response_text})
         except Exception as e:
             if "429" in str(e):
-                st.error("Too many requests. Please try again in 1 minute.")
+                st.error("Too many requests. Please try again later.")
             else:
                 st.error(f"Error: {e}")
-
