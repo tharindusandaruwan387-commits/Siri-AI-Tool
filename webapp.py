@@ -2,50 +2,50 @@ import streamlit as st # type: ignore
 from huggingface_hub import InferenceClient
 import base64
 
-st.set_page_config(
-    page_title="Honorgpt", 
-    page_icon="logo.jpg", 
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+st.set_page_config(page_title="Honorgpt", page_icon="logo.jpg", layout="wide")
 
 st.markdown("""
     <style>
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    .stDeployButton {display:none;}
-    [data-testid="stStatusWidget"] {display: none !important;}
-    [data-testid="stToolbar"] {display: none !important;}
-    
-    div[data-testid="stStatusWidget"] {display: none !important;}
-    header {visibility: hidden;}
-    
-    [data-testid="stSidebarNav"] {display: none;}
-    [data-testid="openSidebar"] {
-        display: block !important;
-        color: white !important;
-    }
-
     .centered-title {
         text-align: center;
-        padding: 5px;
+        padding: 10px;
         font-family: 'Segoe UI', sans-serif;
         color: white;
     }
+    .round-image {
+        border-radius: 50%;
+        overflow: hidden;
+        width: 100px;
+        height: 100px;
+        object-fit: cover;
+        border: 3px solid #FF4B4B;
+        margin: 0 auto;
+    }
     </style>
     """, unsafe_allow_html=True)
+
+def get_image_base64(path):
+    try:
+        with open(path, "rb") as img_file:
+            return base64.b64encode(img_file.read()).decode()
+    except: return ""
 
 with st.sidebar:
     st.image("logo.jpg", width=150)
     st.title("Honorgpt Settings")
     st.write("Created by Tharindu Sandaruwan")
-    st.info("The brilliant Tharindu's AI Assistant")
     
-    st.markdown("<br>" * 15, unsafe_allow_html=True)
+    st.markdown("<br>" * 10, unsafe_allow_html=True)
     if st.button("Settings", use_container_width=True):
         st.toast("Settings coming soon!")
 
-st.markdown("<h1 class='centered-title'>Honorgpt</h1>", unsafe_allow_html=True)
+img_base64 = get_image_base64("logo.jpg")
+st.markdown(f"""
+    <div style="text-align: center;">
+        <img src="data:image/jpeg;base64,{img_base64}" class="round-image">
+        <h1 class='centered-title'>Honorgpt</h1>
+    </div>
+    """, unsafe_allow_html=True)
 
 client = InferenceClient(api_key=st.secrets["HF_TOKEN"])
 
@@ -83,7 +83,6 @@ if prompt := st.chat_input("What do you need to know?"):
             st.session_state.messages.append({"role": "assistant", "content": response_text})
         except Exception as e:
             if "429" in str(e):
-                st.error("Too many requests. Please try again later.")
+                st.error("Too many requests. Please try again in 1 minute.")
             else:
                 st.error(f"Error: {e}")
-
