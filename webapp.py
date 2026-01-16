@@ -6,54 +6,39 @@ st.set_page_config(page_title="Honorgpt", page_icon="logo.jpg", layout="wide")
 
 st.markdown("""
     <style>
-    .stApp {
-        max-width: 1200px;
-        margin: 0 auto;
-    }
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    .stDeployButton {display:none;}
+    [data-testid="stToolbar"] {display: none !important;}
     
-    [data-testid="stSidebar"] {
-        background-color: #1a1a1a;
+    .centered-title {
+        text-align: center;
+        padding: 10px;
+        font-family: 'Segoe UI', sans-serif;
+        color: white;
+        margin-top: -50px; /
     }
 
-    .round-image {
-        border-radius: 50%;
-        overflow: hidden;
-        width: 100px;
-        height: 100px;
-        object-fit: cover;
-        border: 3px solid #FF4B4B;
-        box-shadow: 0px 4px 10px rgba(0,0,0,0.3);
-    }
-
-    .main-header {
-        display: flex;
-        align-items: center;
-        gap: 20px;
-        margin-bottom: 30px;
-        padding-top: 20px;
+    .sidebar-footer {
+        position: fixed;
+        bottom: 20px;
+        width: 260px;
     }
     </style>
     """, unsafe_allow_html=True)
 
-def get_image_base64(path):
-    try:
-        with open(path, "rb") as img_file:
-            return base64.b64encode(img_file.read()).decode()
-    except: return ""
-
 with st.sidebar:
     st.image("logo.jpg", width=150)
-    st.title("🤖 Honorgpt Settings")
+    st.title("🤖 Honorgpt")
     st.write("Created by Tharindu Sandaruwan")
     st.info("The brilliant Tharindu's AI Assistant")
 
-img_base64 = get_image_base64("logo.jpg")
-st.markdown(f"""
-    <div class="main-header">
-        <img src="data:image/jpeg;base64,{img_base64}" class="round-image">
-        <h1 style='margin:0;'>Honorgpt Personal Assistant</h1>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown("<br>" * 10, unsafe_allow_html=True) 
+    if st.button("⚙️ Settings", use_container_width=True):
+        st.write("Settings coming soon...")
+
+st.markdown("<h1 class='centered-title'>Honorgpt</h1>", unsafe_allow_html=True)
 
 client = InferenceClient(api_key=st.secrets["HF_TOKEN"])
 
