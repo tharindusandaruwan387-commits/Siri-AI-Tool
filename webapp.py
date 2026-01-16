@@ -5,16 +5,14 @@ from streamlit_google_auth import Authenticate
 
 
 # --- 1. GOOGLE AUTHENTICATION SETUP ---
-# Aluth version ekata galapena widiyata credentials path ain kara
 auth = Authenticate(
     cookie_name='honorgpt_cookie',
     cookie_key='honorgpt_secret_key',
-    client_id=st.secrets["google_auth"]["client_id"],
-    client_secret=st.secrets["google_auth"]["client_secret"],
+    client_id=st.secrets["google_auth"]["client_id"], # Methana "_" danna
+    client_secret=st.secrets["google_auth"]["client_secret"], # Methana "_" danna
     redirect_uri='https://siri-ai-tool-nci8jzgzzw95njjeur2bp9.streamlit.app/',
 )
 
-# Login check kirima
 auth.check_authenticator()
 
 
@@ -114,6 +112,7 @@ if prompt := st.chat_input("What do you need to know?"):
             
         except Exception as e:
             st.error(f"Error: {e}")
+
 
 
 
