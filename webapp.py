@@ -16,10 +16,9 @@ def get_base64_image(image_path):
 img_data = get_base64_image("logo.jpg")
 ai_avatar = f"data:image/jpeg;base64,{img_data}" if img_data else "🤖"
 
-# CSS - Syntax Error එක මඟහැරීමට {{ }} භාවිතා කර ඇත
+# CSS - මෙතැනට පමණක් {{ }} භාවිතා කළ යුතුය
 st.markdown(f"""
     <style>
-    /* අනවශ්‍ය දේවල් ඉවත් කිරීම */
     #MainMenu {{ visibility: hidden; }}
     footer {{ visibility: hidden; }}
     .stDeployButton {{ display:none; }}
@@ -27,16 +26,14 @@ st.markdown(f"""
     [data-testid="stToolbar"] > div:not(:first-child) {{ display: none !important; }}
     header[data-testid="stHeader"] {{ background: transparent !important; visibility: visible !important; }}
 
-    /* WhatsApp Style Chat Bubbles */
+    /* WhatsApp Style Chat alignment */
     .stChatMessage {{ background-color: transparent !important; }}
     
-    /* User Message to Right */
     [data-testid="stChatMessage"]:has([data-testid="user-avatar"]) {{
         flex-direction: row-reverse !important;
         text-align: right !important;
     }}
     
-    /* Assistant Message to Left */
     [data-testid="stChatMessage"]:has([data-testid="assistant-avatar"]) {{
         flex-direction: row !important;
     }}
@@ -66,17 +63,19 @@ st.markdown("<h1 class='centered-title'>Honorgpt</h1>", unsafe_allow_html=True)
 
 # AI Logic
 try:
+    # ඔයා දැනටමත් Secrets වලට Key එක දාලා තියෙන නිසා මේක වැඩ කරයි
     client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 except Exception as e:
-    st.error(f"Secrets Error: Please check if GROQ_API_KEY is saved correctly. Details: {e}")
+    st.error(f"Error: {e}")
     st.stop()
 
+# මෙතැනට සාමාන්‍ය වරහන් { } පමණක් යෙදිය යුතුය
 if "messages" not in st.session_state:
     st.session_state.messages = [
-        {{"role": "system", "content": "You are Honorgpt, a fast AI created by Tharindu Sandaruwan."}}
+        {"role": "system", "content": "You are Honorgpt, a fast AI created by Tharindu Sandaruwan."}
     ]
 
-# Chat History පෙන්වීම
+# පණිවිඩ පෙන්වීම
 for message in st.session_state.messages:
     if message["role"] == "user":
         with st.chat_message("user"):
@@ -87,7 +86,7 @@ for message in st.session_state.messages:
 
 # Chat Input
 if prompt := st.chat_input("What do you need to know?"):
-    st.session_state.messages.append({{"role": "user", "content": prompt}})
+    st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
@@ -106,6 +105,6 @@ if prompt := st.chat_input("What do you need to know?"):
                     full_response += content
                     response_placeholder.markdown(full_response + "▌")
             response_placeholder.markdown(full_response)
-            st.session_state.messages.append({{"role": "assistant", "content": full_response}})
+            st.session_state.messages.append({"role": "assistant", "content": full_response})
         except Exception as e:
-            st.error(f"Groq API Error: {e}")
+            st.error(f"Error: {e}")
