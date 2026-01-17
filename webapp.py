@@ -2,42 +2,52 @@ import streamlit as st
 from groq import Groq
 import base64
 
-# Page Configuration
+# 1. Page Configuration
 st.set_page_config(page_title="Honorgpt", page_icon="logo.jpg", layout="wide")
 
-# Function to load and convert image to base64
+# ලෝගෝ එක Base64 වලට හැරවීමේ Function එක (Avatar එක සඳහා)
 def get_base64_image(image_path):
-    with open(image_path, "rb") as img_file:
-        return base64.b64encode(img_file.read()).decode()
+    try:
+        with open(image_path, "rb") as img_file:
+            return base64.b64encode(img_file.read()).decode()
+    except:
+        return None
 
-# Try to load avatar, if fails use default
-try:
-    logo_base64 = get_base64_image("logo.jpg")
-    ai_avatar = f"data:image/jpeg;base64,{logo_base64}"
-except:
-    ai_avatar = "🤖"
+img_data = get_base64_image("logo.jpg")
+ai_avatar = f"data:image/jpeg;base64,{img_data}" if img_data else "🤖"
 
-# CSS for Alignment and UI cleaning
+# CSS - WhatsApp Style Chat සහ අනවශ්‍ය අයිකන ඉවත් කිරීම
 st.markdown(f"""
     <style>
-    /* Hide top menu items except Share */
+    /* අනවශ්‍ය දේවල් අයින් කිරීම */
     #MainMenu {{visibility: hidden;}}
     footer {{visibility: hidden;}}
     .stDeployButton {{display:none;}}
-    [data-testid="stStatusWidget"] {{display: none;}}
-    [data-testid="stToolbar"] > div:not(:first-child) {{display: none !important;}}
-    header[data-testid="stHeader"] {{background: transparent !important; visibility: visible !important;}}
-
-    /* Message Alignment */
-    .stChatMessage {{ background-color: transparent !important; }}
+    [data-testid="stStatusWidget"] {{display: none !important;}}
     
-    /* User Message to Right */
+    /* Share බටන් එක විතරක් ඉතිරි කර අනිත් Toolbar අයිකන අයින් කිරීම */
+    [data-testid="stToolbar"] > div:not(:first-child) {{
+        display: none !important;
+    }
+    
+    /* Sidebar Icon එක පෙන්වීම */
+    header[data-testid="stHeader"] {{
+        background: transparent !important;
+        visibility: visible !important;
+    }
+
+    /* WhatsApp Style: User (Right) & AI (Left) */
+    .stChatMessage {{
+        background-color: transparent !important;
+    }}
+    
+    /* User Message පෙළගැස්ම */
     [data-testid="stChatMessage"]:has([data-testid="user-avatar"]) {{
         flex-direction: row-reverse !important;
         text-align: right !important;
     }}
     
-    /* Assistant Message to Left */
+    /* Assistant Message පෙළගැස්ම */
     [data-testid="stChatMessage"]:has([data-testid="assistant-avatar"]) {{
         flex-direction: row !important;
     }}
@@ -60,20 +70,24 @@ with st.sidebar:
     st.write("Created by Tharindu Sandaruwan")
     st.markdown("<br>" * 5, unsafe_allow_html=True)
     if st.button("Log Out", use_container_width=True):
-        st.toast("Logged out successfully!")
+        st.toast("Logged out!")
 
-# Title
+# Main Header (Logo එක අයින් කර නම විතරක් තිබ්බා)
 st.markdown("<h1 class='centered-title'>Honorgpt</h1>", unsafe_allow_html=True)
 
-# Groq Client
-client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+# AI Logic (Groq භාවිතා කරමින්)
+try:
+    client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+except Exception:
+    st.error("Secrets වල GROQ_API_KEY එක දාන්න!")
+    st.stop()
 
 if "messages" not in st.session_state:
     st.session_state.messages = [
-        {{"role": "system", "content": "You are Honorgpt, a fast AI created by Tharindu Sandaruwan."}}
+        {"role": "system", "content": "You are Honorgpt, a fast AI created by Tharindu Sandaruwan."}
     ]
 
-# Display Chat History with Avatars
+# පණිවිඩ පෙන්වීම (Custom Avatars සමඟ)
 for message in st.session_state.messages:
     if message["role"] == "user":
         with st.chat_message("user"):
@@ -84,7 +98,7 @@ for message in st.session_state.messages:
 
 # Chat Input
 if prompt := st.chat_input("What do you need to know?"):
-    st.session_state.messages.append({{"role": "user", "content": prompt}})
+    st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
@@ -102,4 +116,4 @@ if prompt := st.chat_input("What do you need to know?"):
                 full_response += content
                 response_placeholder.markdown(full_response + "▌")
         response_placeholder.markdown(full_response)
-        st.session_state.messages.append({{"role": "assistant", "content": full_response}})
+        st.session_state.messages.append({"role": "assistant", "content": full_response})
