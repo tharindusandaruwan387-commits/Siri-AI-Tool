@@ -13,13 +13,13 @@ def init_supabase():
 
 supabase = init_supabase()
 
-# Session State එක මුලින්ම පරීක්ෂා කිරීම
-if "user" not in st.session_state:
-    st.session_state.user = None
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-if "current_chat_id" not in st.session_state:
-    st.session_state.current_chat_id = None
+# Session State පරීක්ෂාව - මෙතනින් තමයි ලොග් වෙලාද නැද්ද කියලා තීරණය කරන්නේ
+if "user_data" not in st.session_state:
+    st.session_state.user_data = None
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
+if "current_id" not in st.session_state:
+    st.session_state.current_id = None
 
 # ලෝගෝ එක Base64 වලට හැරවීම
 def get_base64_image(image_path):
@@ -32,106 +32,105 @@ img_data = get_base64_image("logo.jpg")
 ai_avatar = f"data:image/jpeg;base64,{img_data}" if img_data else "🤖"
 
 # CSS
-st.markdown(f"""
+st.markdown("""
     <style>
-    .centered-title {{ text-align: center; font-size: 2.5rem; font-weight: bold; padding: 10px; }}
-    .stButton>button {{ width: 100%; border-radius: 20px; }}
+    .stApp { max-width: 1000px; margin: 0 auto; }
+    .centered-title { text-align: center; font-size: 2.5rem; font-weight: bold; padding: 20px; }
+    .stButton>button { width: 100%; border-radius: 10px; height: 50px; background-color: #007bff; color: white; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- DATABASE FUNCTIONS ---
-def save_chat_to_db():
-    if st.session_state.user and st.session_state.messages:
-        title = st.session_state.messages[1]["content"][:30] if len(st.session_state.messages) > 1 else "New Chat"
-        data = {"user_id": st.session_state.user.id, "messages": st.session_state.messages, "title": title}
-        if st.session_state.current_chat_id:
-            supabase.table("chats").update(data).eq("id", st.session_state.current_chat_id).execute()
-        else:
-            res = supabase.table("chats").insert(data).execute()
-            if res.data: st.session_state.current_chat_id = res.data[0]["id"]
-
-# --- AUTH PAGE ---
-def auth_page():
-    st.markdown("<h1 class='centered-title'>Honorgpt Access</h1>", unsafe_allow_html=True)
-    tab1, tab2 = st.tabs(["Login", "Sign Up"])
+# --- ලොගින් පේජ් එක ---
+def show_login():
+    st.markdown("<h1 class='centered-title'>Honorgpt Login</h1>", unsafe_allow_html=True)
     
-    with tab1:
-        email = st.text_input("Email")
-        password = st.text_input("Password", type="password")
-        if st.button("Log In"):
+    # Frame එකක් නැතිව කෙලින්ම Input පෙන්වමු
+    email = st.text_input("Email Address", placeholder="example@gmail.com")
+    password = st.text_input("Password", type="password", placeholder="Enter password")
+    
+    if st.button("LOGIN NOW"):
+        if email and password:
             try:
-                # කෙලින්ම Auth එක පරීක්ෂා කිරීම
                 res = supabase.auth.sign_in_with_password({"email": email, "password": password})
                 if res.user:
-                    st.session_state.user = res.user
-                    st.success("සාර්ථකයි! ඇතුළු වෙනවා...")
-                    st.rerun() # මෙතනදී කෙලින්ම Main App එකට යයි
-            except:
-                st.error("Login වැරදියි! නැවත උත්සාහ කරන්න.")
+                    st.session_state.user_data = res.user
+                    st.success("සාර්ථකයි! ලොග් වෙනවා...")
+                    st.rerun() # කෙලින්ම ඇතුළට අරන් යයි
+            except Exception as e:
+                st.error("Email හෝ Password වැරදියි!")
+        else:
+            st.warning("කරුණාකර විස්තර පුරවන්න.")
+    
+    st.markdown("---")
+    st.write("ඔයාට Account එකක් නැද්ද? Supabase Dashboard එකෙන් User කෙනෙක් එකතු කරන්න.")
 
-    with tab2:
-        n_email = st.text_input("New Email")
-        n_password = st.text_input("New Password", type="password")
-        if st.button("Create Account"):
-            try:
-                supabase.auth.sign_up({"email": n_email, "password": n_password})
-                st.info("Account එක හැදුනා! දැන් Login වෙන්න.")
-            except: st.error("Signup Failed!")
-
-# --- MAIN APP ---
-def main_app():
+# --- ප්‍රධාන ඇප් එක ---
+def show_app():
+    # Sidebar එකේ පරණ චැට්
     with st.sidebar:
         st.image("logo.jpg", width=80)
-        st.write(f"User: {st.session_state.user.email}")
-        if st.button("+ New Chat"):
-            st.session_state.messages = []
-            st.session_state.current_chat_id = None
-            st.rerun()
+        st.write(f"Logged as: {st.session_state.user_data.email}")
         
+        if st.button("+ Start New Chat"):
+            st.session_state.chat_history = []
+            st.session_state.current_id = None
+            st.rerun()
+            
         st.markdown("---")
-        # පරණ චැට් පෙන්වීම
-        history = supabase.table("chats").select("id, title").eq("user_id", st.session_state.user.id).order("id", desc=True).execute()
-        for chat in history.data:
-            if st.button(f"💬 {chat['title']}", key=f"c_{chat['id']}"):
-                res = supabase.table("chats").select("*").eq("id", chat['id']).execute()
-                st.session_state.messages = res.data[0]["messages"]
-                st.session_state.current_chat_id = chat['id']
-                st.rerun()
+        st.subheader("Previous Chats")
+        try:
+            res = supabase.table("chats").select("id, title").eq("user_id", st.session_state.user_data.id).order("id", desc=True).execute()
+            for chat in res.data:
+                if st.button(f"💬 {chat['title']}", key=f"c_{chat['id']}"):
+                    chat_data = supabase.table("chats").select("*").eq("id", chat['id']).execute()
+                    st.session_state.chat_history = chat_data.data[0]["messages"]
+                    st.session_state.current_id = chat['id']
+                    st.rerun()
+        except: pass
 
         if st.button("Logout"):
             supabase.auth.sign_out()
-            st.session_state.user = None
+            st.session_state.user_data = None
             st.rerun()
 
     st.markdown("<h1 class='centered-title'>Honorgpt</h1>", unsafe_allow_html=True)
-    client = Groq(api_key=st.secrets["GROQ_API_KEY"])
-
-    # මැසේජ් පෙන්වීම
-    for m in st.session_state.messages:
+    
+    # Chat display
+    for m in st.session_state.chat_history:
         if m["role"] != "system":
             with st.chat_message(m["role"], avatar=ai_avatar if m["role"] == "assistant" else None):
                 st.markdown(m["content"])
 
-    if prompt := st.chat_input("Ask something..."):
-        if not st.session_state.messages:
-            st.session_state.messages.append({"role": "system", "content": "You are Honorgpt."})
-        
-        st.session_state.messages.append({"role": "user", "content": prompt})
+    # Chat input
+    if prompt := st.chat_input("Ask Honorgpt anything..."):
+        if not st.session_state.chat_history:
+            st.session_state.chat_history.append({"role": "system", "content": "You are Honorgpt."})
+            
+        st.session_state.chat_history.append({"role": "user", "content": prompt})
         with st.chat_message("user"): st.markdown(prompt)
 
         with st.chat_message("assistant", avatar=ai_avatar):
             full_res = ""
             placeholder = st.empty()
-            for chunk in client.chat.completions.create(model="llama-3.3-70b-versatile", messages=st.session_state.messages, stream=True):
+            client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+            for chunk in client.chat.completions.create(model="llama-3.3-70b-versatile", messages=st.session_state.chat_history, stream=True):
                 if chunk.choices[0].delta.content:
                     full_res += chunk.choices[0].delta.content
                     placeholder.markdown(full_res + "▌")
             placeholder.markdown(full_res)
-            st.session_state.messages.append({"role": "assistant", "content": full_res})
-            save_chat_to_db()
+            st.session_state.chat_history.append({"role": "assistant", "content": full_res})
+            
+            # Database එකට සේව් කිරීම
+            chat_title = prompt[:30]
+            db_data = {"user_id": st.session_state.user_data.id, "messages": st.session_state.chat_history, "title": chat_title}
+            if st.session_state.current_id:
+                supabase.table("chats").update(db_data).eq("id", st.session_state.current_id).execute()
+            else:
+                res = supabase.table("chats").insert(db_data).execute()
+                if res.data: st.session_state.current_id = res.data[0]["id"]
 
-# වැඩසටහන ආරම්භය
-if st.session_state.user is None:
-    auth_page()
+# තර්කනය (Logic)
+if st.session_state.user_data is None:
+    show_login()
 else:
-    main_app()
+    show_app()
