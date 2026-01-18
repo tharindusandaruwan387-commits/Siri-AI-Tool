@@ -95,7 +95,7 @@ def auth_page():
         if st.button("Create Account", use_container_width=True):
             try:
                 supabase.auth.sign_up({"email": n_email, "password": n_password})
-                st.info("The account has been created! Now go to the "Login" tab and log in.")
+                st.info("The account has been created! Now go to the Login tab and log in.")
             except:
                 st.error("Signup Failed!")
 
@@ -154,5 +154,6 @@ def main_app():
 
 if st.session_state.user is None: auth_page()
 else: main_app()
+
 
 
