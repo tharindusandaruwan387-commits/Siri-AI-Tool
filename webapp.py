@@ -23,7 +23,7 @@ def get_base64_image(image_path):
 img_data = get_base64_image("logo.jpg")
 ai_avatar = f"data:image/jpeg;base64,{img_data}" if img_data else "🤖"
 
-# CSS - WhatsApp Style & Sidebar Styling
+# CSS
 st.markdown(f"""
     <style>
     #MainMenu {{ visibility: hidden; }}
@@ -47,17 +47,26 @@ if "messages" not in st.session_state: st.session_state.messages = []
 # --- DATABASE FUNCTIONS ---
 def save_chat_to_db():
     if st.session_state.user and st.session_state.messages:
-        chat_title = st.session_state.messages[1]["content"][:30] if len(st.session_state.messages) > 1 else "New Chat"
+        # පළමු මැසේජ් එකෙන් කොටසක් මාතෘකාව ලෙස ගමු
+        title_text = "New Chat"
+        if len(st.session_state.messages) > 1:
+            title_text = st.session_state.messages[1]["content"][:30]
+            
         data = {
             "user_id": st.session_state.user.id,
             "messages": st.session_state.messages,
-            "title": chat_title
+            "title": title_text
         }
-        if st.session_state.current_chat_id:
-            supabase.table("chats").update(data).eq("id", st.session_state.current_chat_id).execute()
-        else:
-            res = supabase.table("chats").insert(data).execute()
-            if res.data: st.session_state.current_chat_id = res.data[0]["id"]
+        
+        try:
+            if st.session_state.current_chat_id:
+                supabase.table("chats").update(data).eq("id", st.session_state.current_chat_id).execute()
+            else:
+                res = supabase.table("chats").insert(data).execute()
+                if res.data:
+                    st.session_state.current_chat_id = res.data[0]["id"]
+        except Exception as e:
+            pass # සේව් කිරීමේදී දෝෂයක් ආවොත් චැට් එකට බාධා නොකරයි
 
 def load_chat(chat_id):
     res = supabase.table("chats").select("*").eq("id", chat_id).execute()
@@ -65,43 +74,37 @@ def load_chat(chat_id):
         st.session_state.messages = res.data[0]["messages"]
         st.session_state.current_chat_id = chat_id
 
-# --- AUTH PAGE (Fixed for 1-click Login) ---
+# --- AUTH PAGE ---
 def auth_page():
     st.markdown("<h1 class='centered-title'>Honorgpt Access</h1>", unsafe_allow_html=True)
     tab1, tab2 = st.tabs(["Login", "Sign Up"])
     
     with tab1:
-        email = st.text_input("Email", key="login_email")
-        password = st.text_input("Password", type="password", key="login_pw")
-        
+        e = st.text_input("Email", key="l_email")
+        p = st.text_input("Password", type="password", key="l_pw")
         if st.button("Login Now", use_container_width=True):
-            if email and password:
-                try:
-                    res = supabase.auth.sign_in_with_password({"email": email, "password": password})
-                    if res.user:
-                        st.session_state.user = res.user
-                        st.success("Successful! Enter...")
-                        # ජාවාස්ක්‍රිප්ට් මගින් පිටුව රිෆ්‍රෙෂ් කරවයි (මෙය එක පාරින් වැඩ කරයි)
-                        st.markdown('<script>window.location.reload();</script>', unsafe_allow_html=True)
-                        st.rerun()
-                except:
-                    st.error("Login is incorrect! Check your email or password.")
-            else:
-                st.warning("Please enter details.")
+            try:
+                res = supabase.auth.sign_in_with_password({"email": e, "password": p})
+                if res.user:
+                    st.session_state.user = res.user
+                    # JavaScript refresh එකකින් තොරව rerun කිරීම
+                    st.rerun()
+            except:
+                st.error("Login වැරදියි! නැවත උත්සාහ කරන්න.")
 
     with tab2:
-        n_email = st.text_input("Email", key="signup_email")
-        n_password = st.text_input("Password", type="password", key="signup_pw")
+        ne = st.text_input("Email", key="s_email")
+        np = st.text_input("Password", type="password", key="s_pw")
         if st.button("Create Account", use_container_width=True):
             try:
-                supabase.auth.sign_up({"email": n_email, "password": n_password})
-                st.info("The account has been created! Now go to the Login tab and log in.")
+                supabase.auth.sign_up({"email": ne, "password": np})
+                st.success("Account එක හැදුනා! දැන් Login ටැබ් එකට ගිහින් ලොග් වෙන්න.")
             except:
                 st.error("Signup Failed!")
 
 # --- MAIN APP ---
 def main_app():
-    # SIDEBAR - CHAT HISTORY
+    # SIDEBAR
     with st.sidebar:
         st.image("logo.jpg", width=80)
         st.write(f"Logged as: {st.session_state.user.email}")
@@ -113,11 +116,14 @@ def main_app():
         
         st.markdown("---")
         st.subheader("Recent Chats")
-        history = supabase.table("chats").select("id, title").eq("user_id", st.session_state.user.id).order("id", desc=True).execute()
-        for chat in history.data:
-            if st.button(f"💬 {chat['title']}", key=str(chat['id'])):
-                load_chat(chat['id'])
-                st.rerun()
+        try:
+            history = supabase.table("chats").select("id, title").eq("user_id", st.session_state.user.id).order("id", desc=True).execute()
+            for chat in history.data:
+                if st.button(f"💬 {chat['title']}", key=f"chat_{chat['id']}"):
+                    load_chat(chat['id'])
+                    st.rerun()
+        except:
+            st.write("No chats found.")
         
         st.markdown("---")
         if st.button("Logout"):
@@ -127,19 +133,26 @@ def main_app():
 
     # MAIN CHAT AREA
     st.markdown("<h1 class='centered-title'>Honorgpt</h1>", unsafe_allow_html=True)
-    client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+    
+    try:
+        client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+    except:
+        st.error("GROQ_API_KEY අඩුවක් තියෙනවා!")
+        st.stop()
 
     if not st.session_state.messages:
         st.session_state.messages = [{"role": "system", "content": "You are Honorgpt."}]
 
     for m in st.session_state.messages:
         if m["role"] != "system":
-            with st.chat_message(m["role"], avatar=ai_avatar if m["role"] == "assistant" else None):
+            avatar = ai_avatar if m["role"] == "assistant" else None
+            with st.chat_message(m["role"], avatar=avatar):
                 st.markdown(m["content"])
 
     if prompt := st.chat_input("Ask Honorgpt..."):
         st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"): st.markdown(prompt)
+        with st.chat_message("user"):
+            st.markdown(prompt)
 
         with st.chat_message("assistant", avatar=ai_avatar):
             res_box = st.empty()
@@ -150,10 +163,9 @@ def main_app():
                     res_box.markdown(full_res + "▌")
             res_box.markdown(full_res)
             st.session_state.messages.append({"role": "assistant", "content": full_res})
-            save_chat_to_db() # මෙතනදී තමයි Database එකට සේව් වෙන්නේ
+            save_chat_to_db()
 
-if st.session_state.user is None: auth_page()
-else: main_app()
-
-
-
+if st.session_state.user is None:
+    auth_page()
+else:
+    main_app()
