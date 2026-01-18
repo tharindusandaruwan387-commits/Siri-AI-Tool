@@ -53,7 +53,7 @@ def main_app():
             st.session_state.user = None
             st.rerun()
     
-    st.title("Honorgpt AI")
+    st.title("Honorgpt")
     # මෙතනට ඔයාගේ කලින් තිබ්බ AI Chat code එක දාන්න පුළුවන්...
     st.info("සාර්ථකව ලොග් වුණා! දැන් ඔබට චැට් කළ හැක.")
 
@@ -62,3 +62,4 @@ if st.session_state.user is None:
     auth_page()
 else:
     main_app()
+
