@@ -49,7 +49,7 @@ st.markdown("""
 
 # --- ලොගින් පේජ් එක ---
 def show_login():
-    st.markdown("<h1 class='centered-title'>Honorgpt Login</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 class='centered-title'>Honorgpt</h1>", unsafe_allow_html=True)
     
     email = st.text_input("Email Address", placeholder="Enter your email")
     password = st.text_input("Password", type="password", placeholder="Enter your password")
@@ -140,3 +140,4 @@ if st.session_state.user_data is None:
     show_login()
 else:
     show_app()
+
