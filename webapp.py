@@ -32,7 +32,7 @@ def auth_page():
                 st.session_state.user = res.user
                 st.rerun()
             except:
-                st.error("Login වැරදියි! Email හෝ Password චෙක් කරන්න.")
+                st.error("Login is incorrect! Check your email or password.")
 
     with tab2:
         new_email = st.text_input("Email", key="signup_email")
@@ -40,9 +40,9 @@ def auth_page():
         if st.button("Create Account"):
             try:
                 supabase.auth.sign_up({"email": new_email, "password": new_password})
-                st.success("Account එක හැදුනා! දැන් Login වෙන්න.")
+                st.success("An account has been created! Login now.")
             except:
-                st.error("Signup වීමේදී දෝෂයක් ඇතිවිය.")
+                st.error("An error occurred while signing up.")
 
 # Main AI Chat App
 def main_app():
@@ -55,11 +55,12 @@ def main_app():
     
     st.title("Honorgpt")
     # මෙතනට ඔයාගේ කලින් තිබ්බ AI Chat code එක දාන්න පුළුවන්...
-    st.info("සාර්ථකව ලොග් වුණා! දැන් ඔබට චැට් කළ හැක.")
+    st.info("Logged in successfully! Now you can chat.")
 
 # පාලනය (Control)
 if st.session_state.user is None:
     auth_page()
 else:
     main_app()
+
 
