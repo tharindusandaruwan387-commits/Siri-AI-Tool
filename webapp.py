@@ -7,13 +7,13 @@ import base64
 st.set_page_config(page_title="Honorgpt", page_icon="logo.jpg", layout="wide")
 
 # Supabase සම්බන්ධ කිරීම
-try:
+@st.cache_resource
+def init_supabase():
     url = st.secrets["SUPABASE_URL"]
     key = st.secrets["SUPABASE_KEY"]
-    supabase = create_client(url, key)
-except Exception as e:
-    st.error("Secrets Error! Please check SUPABASE_URL and SUPABASE_KEY.")
-    st.stop()
+    return create_client(url, key)
+
+supabase = init_supabase()
 
 # ලෝගෝ එක Base64 වලට හැරවීම
 def get_base64_image(image_path):
@@ -31,107 +31,83 @@ st.markdown(f"""
     #MainMenu {{ visibility: hidden; }}
     footer {{ visibility: hidden; }}
     .stDeployButton {{ display:none; }}
-    [data-testid="stToolbar"] > div:not(:first-child) {{ display: none !important; }}
     header[data-testid="stHeader"] {{ background: transparent !important; }}
-    [data-testid="stChatMessage"]:has([data-testid="user-avatar"]) {{
-        flex-direction: row-reverse !important;
-        text-align: right !important;
-    }}
     .centered-title {{ text-align: center; padding: 10px; font-size: 2.5rem; font-weight: bold; }}
     </style>
     """, unsafe_allow_html=True)
 
-# 2. Session State එක පරීක්ෂා කිරීම
-if "user_authenticated" not in st.session_state:
-    st.session_state.user_authenticated = False
-if "user_email" not in st.session_state:
-    st.session_state.user_email = ""
+# 2. Authentication පරීක්ෂාව
+if "user" not in st.session_state:
+    st.session_state.user = None
 
-# --- LOGIN / SIGNUP PAGE ---
+# --- AUTH PAGE ---
 def auth_page():
     st.markdown("<h1 class='centered-title'>Honorgpt Access</h1>", unsafe_allow_html=True)
     tab1, tab2 = st.tabs(["Login", "Sign Up"])
     
     with tab1:
-        email = st.text_input("Email", key="login_email_input")
-        password = st.text_input("Password", type="password", key="login_pw_input")
-        if st.button("Login Now", use_container_width=True):
-            try:
-                res = supabase.auth.sign_in_with_password({"email": email, "password": password})
-                if res.user:
-                    st.session_state.user_authenticated = True
-                    st.session_state.user_email = res.user.email
-                    st.rerun() # කෙලින්ම පිටුව අලුත් කරනවා
-            except Exception as e:
-                st.error(f"Login වැරදියි: {e}")
+        with st.form("login_form"):
+            email = st.text_input("Email")
+            password = st.text_input("Password", type="password")
+            submit = st.form_submit_button("Login Now", use_container_width=True)
+            if submit:
+                try:
+                    res = supabase.auth.sign_in_with_password({"email": email, "password": password})
+                    st.session_state.user = res.user
+                    st.success("සාර්ථකයි! කරුණාකර නැවත 'Login Now' ක්ලික් කරන්න හෝ පිටුව Refresh කරන්න.")
+                    st.rerun()
+                except Exception as e:
+                    st.error("Login වැරදියි. නැවත උත්සාහ කරන්න.")
 
     with tab2:
-        n_email = st.text_input("Email", key="signup_email_input")
-        n_password = st.text_input("Password", type="password", key="signup_pw_input")
-        if st.button("Create Account", use_container_width=True):
-            try:
-                supabase.auth.sign_up({"email": n_email, "password": n_password})
-                st.success("Account එක හැදුනා! දැන් Login ටැබ් එකට ගිහින් ලොග් වෙන්න.")
-            except Exception as e:
-                st.error(f"Signup Error: {e}")
+        with st.form("signup_form"):
+            n_email = st.text_input("Email")
+            n_password = st.text_input("Password", type="password")
+            n_submit = st.form_submit_button("Create Account", use_container_width=True)
+            if n_submit:
+                try:
+                    supabase.auth.sign_up({"email": n_email, "password": n_password})
+                    st.success("Account එක හැදුනා! දැන් Login ටැබ් එකට ගිහින් ලොග් වෙන්න.")
+                except: st.error("Signup Error!")
 
-# --- MAIN CHAT APP ---
+# --- MAIN APP ---
 def main_app():
-    # Sidebar
     with st.sidebar:
         st.image("logo.jpg", width=100)
-        st.write(f"Account: {st.session_state.user_email}")
+        st.write(f"Account: {st.session_state.user.email}")
         if st.button("Logout"):
             supabase.auth.sign_out()
-            st.session_state.user_authenticated = False
-            st.session_state.user_email = ""
+            st.session_state.user = None
             st.rerun()
 
     st.markdown("<h1 class='centered-title'>Honorgpt</h1>", unsafe_allow_html=True)
-
-    # Groq AI එක සම්බන්ධ කිරීම
-    try:
-        client = Groq(api_key=st.secrets["GROQ_API_KEY"])
-    except:
-        st.error("GROQ_API_KEY එක Secrets වලට දාන්න!")
-        st.stop()
+    client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
     if "messages" not in st.session_state:
-        st.session_state.messages = [{"role": "system", "content": "You are Honorgpt, created by Tharindu Sandaruwan."}]
+        st.session_state.messages = [{"role": "system", "content": "You are Honorgpt."}]
 
-    # Chat පෙන්වීම
     for message in st.session_state.messages:
         if message["role"] != "system":
             avatar = ai_avatar if message["role"] == "assistant" else None
             with st.chat_message(message["role"], avatar=avatar):
                 st.markdown(message["content"])
 
-    # Chat Input
-    if prompt := st.chat_input("Ask Honorgpt anything..."):
+    if prompt := st.chat_input("Ask something..."):
         st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
+        with st.chat_message("user"): st.markdown(prompt)
 
         with st.chat_message("assistant", avatar=ai_avatar):
             full_res = ""
             placeholder = st.empty()
-            try:
-                completion = client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
-                    messages=st.session_state.messages,
-                    stream=True
-                )
-                for chunk in completion:
-                    if chunk.choices[0].delta.content:
-                        full_res += chunk.choices[0].delta.content
-                        placeholder.markdown(full_res + "▌")
-                placeholder.markdown(full_res)
-                st.session_state.messages.append({"role": "assistant", "content": full_res})
-            except Exception as e:
-                st.error(f"AI Error: {e}")
+            completion = client.chat.completions.create(model="llama-3.3-70b-versatile", messages=st.session_state.messages, stream=True)
+            for chunk in completion:
+                if chunk.choices[0].delta.content:
+                    full_res += chunk.choices[0].delta.content
+                    placeholder.markdown(full_res + "▌")
+            placeholder.markdown(full_res)
+            st.session_state.messages.append({"role": "assistant", "content": full_res})
 
-# පිටු අතර මාරු වීම (Control Logic)
-if not st.session_state.user_authenticated:
+if st.session_state.user is None:
     auth_page()
 else:
     main_app()
