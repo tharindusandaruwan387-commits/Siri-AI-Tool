@@ -13,7 +13,7 @@ def init_supabase():
 
 supabase = init_supabase()
 
-# Session State පරීක්ෂාව - මෙතනින් තමයි ලොග් වෙලාද නැද්ද කියලා තීරණය කරන්නේ
+# Session State පරීක්ෂාව
 if "user_data" not in st.session_state:
     st.session_state.user_data = None
 if "chat_history" not in st.session_state:
@@ -31,53 +31,51 @@ def get_base64_image(image_path):
 img_data = get_base64_image("logo.jpg")
 ai_avatar = f"data:image/jpeg;base64,{img_data}" if img_data else "🤖"
 
-# CSS
+# CSS - පිරිසිදු පෙනුම සඳහා
 st.markdown("""
     <style>
-    .stApp { max-width: 1000px; margin: 0 auto; }
-    .centered-title { text-align: center; font-size: 2.5rem; font-weight: bold; padding: 20px; }
-    .stButton>button { width: 100%; border-radius: 10px; height: 50px; background-color: #007bff; color: white; }
+    .stApp { max-width: 800px; margin: 0 auto; }
+    .centered-title { text-align: center; font-size: 2.5rem; font-weight: bold; padding: 20px; color: #ffffff; }
+    .stButton>button { width: 100%; border-radius: 12px; height: 50px; background-color: #00a884; color: white; font-weight: bold; border: none; }
+    div[data-testid="stTextInput"] > div > div > input { border-radius: 10px; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- ලොගින් පේජ් එක ---
+# --- ලොගින් පේජ් එක (සරල කළ අනුවාදය) ---
 def show_login():
     st.markdown("<h1 class='centered-title'>Honorgpt Login</h1>", unsafe_allow_html=True)
     
-    # Frame එකක් නැතිව කෙලින්ම Input පෙන්වමු
-    email = st.text_input("Email Address", placeholder="example@gmail.com")
-    password = st.text_input("Password", type="password", placeholder="Enter password")
+    # මැදට වෙන්න ලොගින් බොක්ස් එක පෙන්වමු
+    email = st.text_input("Email Address", placeholder="Enter your email")
+    password = st.text_input("Password", type="password", placeholder="Enter your password")
     
     if st.button("LOGIN NOW"):
         if email and password:
             try:
+                # සෘජුවම ලොගින් එක පරීක්ෂා කිරීම
                 res = supabase.auth.sign_in_with_password({"email": email, "password": password})
                 if res.user:
                     st.session_state.user_data = res.user
-                    st.success("සාර්ථකයි! ලොග් වෙනවා...")
-                    st.rerun() # කෙලින්ම ඇතුළට අරන් යයි
-            except Exception as e:
-                st.error("Email හෝ Password වැරදියි!")
+                    st.success("සාර්ථකයි! ඇතුළු වෙනවා...")
+                    st.rerun() # එක පාරින් චැට් එකට යයි
+            except Exception:
+                st.error("Login වැරදියි! කරුණාකර නිවැරදි Email සහ Password ලබා දෙන්න.")
         else:
-            st.warning("කරුණාකර විස්තර පුරවන්න.")
-    
-    st.markdown("---")
-    st.write("ඔයාට Account එකක් නැද්ද? Supabase Dashboard එකෙන් User කෙනෙක් එකතු කරන්න.")
+            st.warning("කරුණාකර සියලු විස්තර පුරවන්න.")
 
 # --- ප්‍රධාන ඇප් එක ---
 def show_app():
-    # Sidebar එකේ පරණ චැට්
     with st.sidebar:
         st.image("logo.jpg", width=80)
-        st.write(f"Logged as: {st.session_state.user_data.email}")
+        st.write(f"Logged: {st.session_state.user_data.email}")
         
-        if st.button("+ Start New Chat"):
+        if st.button("+ New Chat"):
             st.session_state.chat_history = []
             st.session_state.current_id = None
             st.rerun()
             
         st.markdown("---")
-        st.subheader("Previous Chats")
+        st.subheader("History")
         try:
             res = supabase.table("chats").select("id, title").eq("user_id", st.session_state.user_data.id).order("id", desc=True).execute()
             for chat in res.data:
@@ -95,14 +93,12 @@ def show_app():
 
     st.markdown("<h1 class='centered-title'>Honorgpt</h1>", unsafe_allow_html=True)
     
-    # Chat display
     for m in st.session_state.chat_history:
         if m["role"] != "system":
             with st.chat_message(m["role"], avatar=ai_avatar if m["role"] == "assistant" else None):
                 st.markdown(m["content"])
 
-    # Chat input
-    if prompt := st.chat_input("Ask Honorgpt anything..."):
+    if prompt := st.chat_input("Ask Honorgpt..."):
         if not st.session_state.chat_history:
             st.session_state.chat_history.append({"role": "system", "content": "You are Honorgpt."})
             
@@ -120,16 +116,16 @@ def show_app():
             placeholder.markdown(full_res)
             st.session_state.chat_history.append({"role": "assistant", "content": full_res})
             
-            # Database එකට සේව් කිරීම
+            # Auto-save logic
             chat_title = prompt[:30]
             db_data = {"user_id": st.session_state.user_data.id, "messages": st.session_state.chat_history, "title": chat_title}
             if st.session_state.current_id:
                 supabase.table("chats").update(db_data).eq("id", st.session_state.current_id).execute()
             else:
-                res = supabase.table("chats").insert(db_data).execute()
-                if res.data: st.session_state.current_id = res.data[0]["id"]
+                db_res = supabase.table("chats").insert(db_data).execute()
+                if db_res.data: st.session_state.current_id = db_res.data[0]["id"]
 
-# තර්කනය (Logic)
+# Main Logic
 if st.session_state.user_data is None:
     show_login()
 else:
