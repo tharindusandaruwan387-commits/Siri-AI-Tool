@@ -13,15 +13,32 @@ def init_supabase():
 
 supabase = init_supabase()
 
-# Session State පරීක්ෂාව
-if "user_data" not in st.session_state:
-    st.session_state.user_data = None
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
-if "current_id" not in st.session_state:
-    st.session_state.current_id = None
-if "auth_mode" not in st.session_state:
-    st.session_state.auth_mode = "login"
+# Session State මුලික සැකසුම්
+if "user_data" not in st.session_state: st.session_state.user_data = None
+if "chat_history" not in st.session_state: st.session_state.chat_history = []
+if "current_id" not in st.session_state: st.session_state.current_id = None
+
+# --- AUTH FUNCTIONS (Callbacks for 1-click login) ---
+def handle_login():
+    email = st.session_state.get("auth_email")
+    password = st.session_state.get("auth_pw")
+    if email and password:
+        try:
+            res = supabase.auth.sign_in_with_password({"email": email, "password": password})
+            if res.user:
+                st.session_state.user_data = res.user
+        except:
+            st.toast("Login Failed! Check details.", icon="❌")
+
+def handle_signup():
+    email = st.session_state.get("auth_email")
+    password = st.session_state.get("auth_pw")
+    if email and password:
+        try:
+            supabase.auth.sign_up({"email": email, "password": password})
+            st.toast("Account Created! Now click Login.", icon="✅")
+        except:
+            st.toast("Signup Failed!", icon="⚠️")
 
 # ලෝගෝ එක Base64 වලට හැරවීම
 def get_base64_image(image_path):
@@ -33,65 +50,35 @@ def get_base64_image(image_path):
 img_data = get_base64_image("logo.jpg")
 ai_avatar = f"data:image/jpeg;base64,{img_data}" if img_data else "🤖"
 
-# CSS - බටන් වල පාට අයින් කර Background එකට ගැලපෙන සේ සැකසීම
+# CSS
 st.markdown("""
     <style>
     .block-container { max-width: 800px; padding-top: 2rem; margin: auto; }
     .centered-title { text-align: center; font-size: 2.5rem; font-weight: bold; padding: 20px; }
-    
-    /* බටන් වල පාට අයින් කර Border එකක් පමණක් තැබීම */
     .stButton>button { 
-        width: 100%; 
-        border-radius: 12px; 
-        height: 50px; 
-        background-color: transparent; 
-        color: white; 
-        font-weight: bold; 
-        border: 2px solid #555; 
+        width: 100%; border-radius: 12px; height: 50px; 
+        background-color: transparent; color: white; 
+        font-weight: bold; border: 2px solid #555; 
     }
-    .stButton>button:hover {
-        border-color: #00a884;
-        color: #00a884;
-    }
-    div[data-testid="stTextInput"] > div > div > input { border-radius: 10px; }
+    .stButton>button:hover { border-color: #00a884; color: #00a884; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- AUTH PAGE (Login & Sign Up Side by Side) ---
+# --- AUTH PAGE ---
 def show_auth():
     st.markdown("<h1 class='centered-title'>Honorgpt Access</h1>", unsafe_allow_html=True)
     
-    email = st.text_input("Email Address", key="auth_email")
-    password = st.text_input("Password", type="password", key="auth_pw")
+    st.text_input("Email Address", key="auth_email")
+    st.text_input("Password", type="password", key="auth_pw")
     
-    st.write("") # ඉඩක් තැබීමට
-    
-    # බටන් දෙක එකම පේළියේ තැබීමට Columns පාවිච්චි කිරීම
+    st.write("")
     col1, col2 = st.columns(2)
     
+    # මෙතනදී on_click පාවිච්චි කරන නිසා එක පාරින්ම Session එක Update වෙනවා
     with col1:
-        if st.button("LOGIN NOW"):
-            if email and password:
-                try:
-                    res = supabase.auth.sign_in_with_password({"email": email, "password": password})
-                    if res.user:
-                        st.session_state.user_data = res.user
-                        st.rerun() # එක පාරින්ම ඇතුළට යයි
-                except:
-                    st.error("Login Failed!")
-            else:
-                st.warning("Enter details")
-
+        st.button("LOGIN NOW", on_click=handle_login)
     with col2:
-        if st.button("SIGN UP"):
-            if email and password:
-                try:
-                    supabase.auth.sign_up({"email": email, "password": password})
-                    st.success("Account created! Now click Login.")
-                except:
-                    st.error("Signup failed!")
-            else:
-                st.warning("Enter details")
+        st.button("SIGN UP", on_click=handle_signup)
 
 # --- MAIN APP ---
 def show_app():
@@ -103,7 +90,6 @@ def show_app():
             st.session_state.current_id = None
             st.rerun()
         st.markdown("---")
-        st.subheader("History")
         try:
             res = supabase.table("chats").select("id, title").eq("user_id", st.session_state.user_data.id).order("id", desc=True).execute()
             for chat in res.data:
@@ -119,6 +105,7 @@ def show_app():
             st.rerun()
 
     st.markdown("<h1 class='centered-title'>Honorgpt</h1>", unsafe_allow_html=True)
+    
     for m in st.session_state.chat_history:
         if m["role"] != "system":
             with st.chat_message(m["role"], avatar=ai_avatar if m["role"] == "assistant" else None):
@@ -140,7 +127,7 @@ def show_app():
             placeholder.markdown(full_res)
             st.session_state.chat_history.append({"role": "assistant", "content": full_res})
             
-            # Auto-save
+            # Save to DB
             db_data = {"user_id": st.session_state.user_data.id, "messages": st.session_state.chat_history, "title": prompt[:30]}
             if st.session_state.current_id:
                 supabase.table("chats").update(db_data).eq("id", st.session_state.current_id).execute()
@@ -148,7 +135,7 @@ def show_app():
                 db_res = supabase.table("chats").insert(db_data).execute()
                 if db_res.data: st.session_state.current_id = db_res.data[0]["id"]
 
-# Main Logic
+# Main Execution
 if st.session_state.user_data is None:
     show_auth()
 else:
