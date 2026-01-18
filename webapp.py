@@ -3,8 +3,8 @@ from groq import Groq
 from supabase import create_client
 import base64
 
-# 1. Page Configuration
-st.set_page_config(page_title="Honorgpt", page_icon="logo.jpg", layout="wide")
+# 1. Page Configuration - layout="wide" අයින් කර ඇති නිසා ස්වයංක්‍රීයව මැදට පෙන්වයි
+st.set_page_config(page_title="Honorgpt", page_icon="logo.jpg")
 
 # Supabase සම්බන්ධ කිරීම
 @st.cache_resource
@@ -31,43 +31,49 @@ def get_base64_image(image_path):
 img_data = get_base64_image("logo.jpg")
 ai_avatar = f"data:image/jpeg;base64,{img_data}" if img_data else "🤖"
 
-# CSS - පිරිසිදු පෙනුම සඳහා
+# CSS - මැදට පෙනීම (Centered) සහ අතුරුමුහුණතේ ලස්සන සඳහා
 st.markdown("""
     <style>
-    .stApp { max-width: 800px; margin: 0 auto; }
+    /* ඇප් එකේ අන්තර්ගතය මැදට පෙන්වීමට */
+    .block-container {
+        max-width: 800px;
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+        margin: auto;
+    }
     .centered-title { text-align: center; font-size: 2.5rem; font-weight: bold; padding: 20px; color: #ffffff; }
     .stButton>button { width: 100%; border-radius: 12px; height: 50px; background-color: #00a884; color: white; font-weight: bold; border: none; }
     div[data-testid="stTextInput"] > div > div > input { border-radius: 10px; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- ලොගින් පේජ් එක (සරල කළ අනුවාදය) ---
+# --- ලොගින් පේජ් එක ---
 def show_login():
     st.markdown("<h1 class='centered-title'>Honorgpt Login</h1>", unsafe_allow_html=True)
     
-    # මැදට වෙන්න ලොගින් බොක්ස් එක පෙන්වමු
     email = st.text_input("Email Address", placeholder="Enter your email")
     password = st.text_input("Password", type="password", placeholder="Enter your password")
     
     if st.button("LOGIN NOW"):
         if email and password:
             try:
-                # සෘජුවම ලොගින් එක පරීක්ෂා කිරීම
+                # ලොගින් වීම පරීක්ෂා කිරීම
                 res = supabase.auth.sign_in_with_password({"email": email, "password": password})
                 if res.user:
                     st.session_state.user_data = res.user
                     st.success("සාර්ථකයි! ඇතුළු වෙනවා...")
-                    st.rerun() # එක පාරින් චැට් එකට යයි
+                    st.rerun() # එක පාරින්ම චැට් එකට යයි
             except Exception:
-                st.error("Login වැරදියි! කරුණාකර නිවැරදි Email සහ Password ලබා දෙන්න.")
+                st.error("Email හෝ Password වැරදියි!")
         else:
             st.warning("කරුණාකර සියලු විස්තර පුරවන්න.")
 
 # --- ප්‍රධාන ඇප් එක ---
 def show_app():
+    # Sidebar සැකසුම
     with st.sidebar:
         st.image("logo.jpg", width=80)
-        st.write(f"Logged: {st.session_state.user_data.email}")
+        st.write(f"User: {st.session_state.user_data.email}")
         
         if st.button("+ New Chat"):
             st.session_state.chat_history = []
@@ -75,8 +81,9 @@ def show_app():
             st.rerun()
             
         st.markdown("---")
-        st.subheader("History")
+        st.subheader("Recent Chats")
         try:
+            # පරණ චැට් ලිස්ට් එක Database එකෙන් ලබා ගැනීම
             res = supabase.table("chats").select("id, title").eq("user_id", st.session_state.user_data.id).order("id", desc=True).execute()
             for chat in res.data:
                 if st.button(f"💬 {chat['title']}", key=f"c_{chat['id']}"):
@@ -93,12 +100,14 @@ def show_app():
 
     st.markdown("<h1 class='centered-title'>Honorgpt</h1>", unsafe_allow_html=True)
     
+    # පරණ මැසේජ් පෙන්වීම
     for m in st.session_state.chat_history:
         if m["role"] != "system":
             with st.chat_message(m["role"], avatar=ai_avatar if m["role"] == "assistant" else None):
                 st.markdown(m["content"])
 
-    if prompt := st.chat_input("Ask Honorgpt..."):
+    # Chat input
+    if prompt := st.chat_input("Ask Honorgpt anything..."):
         if not st.session_state.chat_history:
             st.session_state.chat_history.append({"role": "system", "content": "You are Honorgpt."})
             
@@ -109,6 +118,7 @@ def show_app():
             full_res = ""
             placeholder = st.empty()
             client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+            # AI පිළිතුර ලබා ගැනීම
             for chunk in client.chat.completions.create(model="llama-3.3-70b-versatile", messages=st.session_state.chat_history, stream=True):
                 if chunk.choices[0].delta.content:
                     full_res += chunk.choices[0].delta.content
@@ -116,7 +126,7 @@ def show_app():
             placeholder.markdown(full_res)
             st.session_state.chat_history.append({"role": "assistant", "content": full_res})
             
-            # Auto-save logic
+            # Database එකට චැට් එක සේව් කිරීම
             chat_title = prompt[:30]
             db_data = {"user_id": st.session_state.user_data.id, "messages": st.session_state.chat_history, "title": chat_title}
             if st.session_state.current_id:
