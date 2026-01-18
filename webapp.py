@@ -65,29 +65,39 @@ def load_chat(chat_id):
         st.session_state.messages = res.data[0]["messages"]
         st.session_state.current_chat_id = chat_id
 
-# --- AUTH PAGE ---
+# --- AUTH PAGE (Fixed for 1-click Login) ---
 def auth_page():
-    st.markdown("<h1 class='centered-title'>Honorgpt</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 class='centered-title'>Honorgpt Access</h1>", unsafe_allow_html=True)
     tab1, tab2 = st.tabs(["Login", "Sign Up"])
+    
     with tab1:
-        with st.form("login"):
-            e = st.text_input("Email")
-            p = st.text_input("Password", type="password")
-            if st.form_submit_button("Login Now"):
+        email = st.text_input("Email", key="login_email")
+        password = st.text_input("Password", type="password", key="login_pw")
+        
+        if st.button("Login Now", use_container_width=True):
+            if email and password:
                 try:
-                    res = supabase.auth.sign_in_with_password({"email": e, "password": p})
-                    st.session_state.user = res.user
-                    st.rerun()
-                except: st.error("Login Failed!")
+                    res = supabase.auth.sign_in_with_password({"email": email, "password": password})
+                    if res.user:
+                        st.session_state.user = res.user
+                        st.success("Successful! Enter...")
+                        # ජාවාස්ක්‍රිප්ට් මගින් පිටුව රිෆ්‍රෙෂ් කරවයි (මෙය එක පාරින් වැඩ කරයි)
+                        st.markdown('<script>window.location.reload();</script>', unsafe_allow_html=True)
+                        st.rerun()
+                except:
+                    st.error("Login is incorrect! Check your email or password.")
+            else:
+                st.warning("Please enter details.")
+
     with tab2:
-        with st.form("signup"):
-            ne = st.text_input("Email")
-            np = st.text_input("Password", type="password")
-            if st.form_submit_button("Create Account"):
-                try:
-                    supabase.auth.sign_up({"email": ne, "password": np})
-                    st.success("Account Created! Now Login.")
-                except: st.error("Signup Failed!")
+        n_email = st.text_input("Email", key="signup_email")
+        n_password = st.text_input("Password", type="password", key="signup_pw")
+        if st.button("Create Account", use_container_width=True):
+            try:
+                supabase.auth.sign_up({"email": n_email, "password": n_password})
+                st.info("The account has been created! Now go to the "Login" tab and log in.")
+            except:
+                st.error("Signup Failed!")
 
 # --- MAIN APP ---
 def main_app():
@@ -144,4 +154,5 @@ def main_app():
 
 if st.session_state.user is None: auth_page()
 else: main_app()
+
 
