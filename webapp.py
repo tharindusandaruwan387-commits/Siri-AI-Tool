@@ -67,7 +67,7 @@ def load_chat(chat_id):
 
 # --- AUTH PAGE ---
 def auth_page():
-    st.markdown("<h1 class='centered-title'>Honorgpt Access</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 class='centered-title'>Honorgpt</h1>", unsafe_allow_html=True)
     tab1, tab2 = st.tabs(["Login", "Sign Up"])
     with tab1:
         with st.form("login"):
@@ -144,3 +144,4 @@ def main_app():
 
 if st.session_state.user is None: auth_page()
 else: main_app()
+
