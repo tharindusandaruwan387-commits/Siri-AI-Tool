@@ -59,7 +59,7 @@ def show_auth():
             except:
                 st.error("Invalid Email or Password!")
         
-        if st.button("Don't have an account? Sign Up", key="go_to_signup"):
+        if st.button("Sign Up", key="go_to_signup"):
             st.session_state.auth_mode = "signup"
             st.rerun()
 
@@ -139,3 +139,4 @@ if st.session_state.user_data is None:
     show_auth()
 else:
     show_app()
+
