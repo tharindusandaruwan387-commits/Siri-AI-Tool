@@ -38,7 +38,7 @@ def handle_signup():
             supabase.auth.sign_up({"email": email, "password": password})
             st.toast("Account Created! Now click Login.", icon="✅")
         except:
-            st.toast("Signup Failed!", icon="⚠️")
+            st.error(f"Signup Faild: {e}")
 
 # ලෝගෝ එක Base64 වලට හැරවීම
 def get_base64_image(image_path):
