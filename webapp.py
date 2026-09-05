@@ -124,11 +124,6 @@ def free_fire_optimizer():
         ]
     )
 
-    st.caption(
-        "💡 Resolution, refresh rate වගේ technical details "
-        "දන්නේ නැති වුණත් ප්‍රශ්නයක් නැහැ."
-    )
-
     st.write("")
 
     if st.button(
