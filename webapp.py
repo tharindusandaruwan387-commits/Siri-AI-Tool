@@ -1,91 +1,22 @@
 import streamlit as st
 from groq import Groq
-from supabase import create_client
-import base64
 
-# 1. Page Configuration
+# =========================================================
+# PAGE CONFIG
+# =========================================================
+
 st.set_page_config(
     page_title="Honorgpt",
-    page_icon="logo.jpg"
+    page_icon="logo.jpg",
+    layout="centered"
 )
 
-# Supabase සම්බන්ධ කිරීම
-@st.cache_resource
-def init_supabase():
-    return create_client(
-        st.secrets["SUPABASE_URL"],
-        st.secrets["SUPABASE_KEY"]
-    )
-
-supabase = init_supabase()
-
-# Session State
-if "user_data" not in st.session_state:
-    st.session_state.user_data = None
+# =========================================================
+# SESSION STATE
+# =========================================================
 
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
-
-if "current_id" not in st.session_state:
-    st.session_state.current_id = None
-
-
-# =========================================================
-# ADMIN LOGIN
-# =========================================================
-
-def handle_login():
-
-    email = st.session_state.get("auth_email", "").strip()
-    password = st.session_state.get("auth_pw", "")
-
-    if not email or not password:
-        st.error("Please enter Email and Password.")
-        return
-
-    # Admin credentials are stored in Streamlit Secrets
-    admin_email = st.secrets["ADMIN_EMAIL"]
-    admin_password = st.secrets["ADMIN_PASSWORD"]
-
-    # Check Admin credentials first
-    if email != admin_email or password != admin_password:
-        st.error("❌ Access Denied. Admin account only.")
-        return
-
-    # Login to Supabase
-    try:
-        res = supabase.auth.sign_in_with_password({
-            "email": email,
-            "password": password
-        })
-
-        if res.user:
-            st.session_state.user_data = res.user
-            st.success("✅ Login successful!")
-            st.rerun()
-
-    except Exception as e:
-        st.error("❌ Login failed. Check your Admin credentials.")
-
-
-# =========================================================
-# LOGO
-# =========================================================
-
-def get_base64_image(image_path):
-    try:
-        with open(image_path, "rb") as img_file:
-            return base64.b64encode(img_file.read()).decode()
-    except Exception:
-        return None
-
-
-img_data = get_base64_image("logo.jpg")
-
-if img_data:
-    ai_avatar = f"data:image/jpeg;base64,{img_data}"
-else:
-    ai_avatar = "🤖"
 
 
 # =========================================================
@@ -96,31 +27,43 @@ st.markdown("""
 <style>
 
 .block-container {
-    max-width: 800px;
-    padding-top: 2rem;
+    max-width: 850px;
+    padding-top: 1.5rem;
     margin: auto;
 }
 
 .centered-title {
     text-align: center;
-    font-size: 2.5rem;
+    font-size: 2.7rem;
     font-weight: bold;
-    padding: 20px;
+    padding: 5px;
 }
 
-.stButton>button {
-    width: 100%;
+.subtitle {
+    text-align: center;
+    color: #999;
+    margin-bottom: 25px;
+}
+
+.social-box {
+    text-align: center;
+    padding: 20px 10px;
+    margin-top: 35px;
+    border-top: 1px solid #444;
+}
+
+.social-button {
+    display: inline-block;
+    padding: 10px 18px;
+    margin: 5px;
+    border: 1px solid #555;
     border-radius: 12px;
-    height: 50px;
-    background-color: transparent;
-    color: white;
+    text-decoration: none !important;
     font-weight: bold;
-    border: 2px solid #555;
 }
 
-.stButton>button:hover {
+.social-button:hover {
     border-color: #00a884;
-    color: #00a884;
 }
 
 </style>
@@ -128,264 +71,363 @@ st.markdown("""
 
 
 # =========================================================
-# AUTH PAGE
+# GROQ CLIENT
 # =========================================================
 
-def show_auth():
-
-    st.markdown(
-        "<h1 class='centered-title'>Honorgpt Access</h1>",
-        unsafe_allow_html=True
+def get_groq_client():
+    return Groq(
+        api_key=st.secrets["GROQ_API_KEY"]
     )
 
-    st.info("🔐 Admin access only")
 
-    st.text_input(
-        "Admin Email",
-        key="auth_email"
+# =========================================================
+# FREE FIRE OPTIMIZER
+# =========================================================
+
+def free_fire_optimizer():
+
+    st.markdown("## 🎮 Free Fire Device Optimizer")
+
+    st.write(
+        "ඔයාගේ phone model එක සහ RAM එක දුන්නාම, "
+        "Free Fire සඳහා ගැළපෙන settings recommend කරමු."
     )
 
-    st.text_input(
-        "Password",
-        type="password",
-        key="auth_pw"
+    col1, col2 = st.columns(2)
+
+    with col1:
+
+        phone = st.text_input(
+            "📱 Phone Model",
+            placeholder="Ex: Honor X5b"
+        )
+
+    with col2:
+
+        ram = st.selectbox(
+            "🧠 RAM",
+            [
+                "2 GB",
+                "3 GB",
+                "4 GB",
+                "6 GB",
+                "8 GB",
+                "12 GB",
+                "16 GB"
+            ]
+        )
+
+    game = st.selectbox(
+        "🎮 Game",
+        [
+            "Free Fire",
+            "Free Fire MAX"
+        ]
+    )
+
+    st.caption(
+        "💡 Resolution, refresh rate වගේ technical details "
+        "දන්නේ නැති වුණත් ප්‍රශ්නයක් නැහැ."
     )
 
     st.write("")
 
-    st.button(
-        "LOGIN NOW",
-        on_click=handle_login
-    )
+    if st.button(
+        "🚀 OPTIMIZE MY DEVICE",
+        use_container_width=True
+    ):
+
+        if not phone.strip():
+            st.warning("📱 Please enter your phone model.")
+            return
+
+        prompt = f"""
+You are K!ngX Free Fire Device Optimizer.
+
+The user wants gaming settings for:
+
+Phone Model: {phone}
+RAM: {ram}
+Game: {game}
+
+Create a useful and realistic Free Fire optimization guide.
+
+IMPORTANT:
+- Do NOT ask the user for screen resolution.
+- Do NOT ask the user for refresh rate.
+- Do NOT require technical specifications.
+- If a device specification is unknown, do not pretend it is certain.
+- Give practical recommendations based mainly on phone model and RAM.
+- Sensitivity values are recommendations, not guaranteed perfect values.
+- Never promise automatic headshots, zero recoil, or zero lag.
+
+Give the result using these sections:
+
+1. 📱 Device Performance
+Classify it as:
+Low / Entry / Mid / High
+
+Explain briefly why.
+
+2. 🎯 Free Fire Sensitivity
+
+Give values for:
+- General
+- Red Dot
+- 2X Scope
+- 4X Scope
+- Sniper Scope
+- Free Look
+
+Use the current Free Fire sensitivity scale appropriately.
+
+3. 🖱️ DPI
+
+Give a reasonable DPI range.
+Explain that DPI depends on touch preference and phone display.
+
+4. 🎨 Graphics
+
+Recommend:
+- Graphics
+- High FPS
+- Auto Scale
+
+5. ⚙️ Android Developer Options
+
+Only recommend useful and reasonably safe gaming-related settings.
+
+For every setting:
+- Setting name
+- Recommended value
+- Short explanation
+
+Do NOT recommend risky or unnecessary developer settings.
+
+6. 🚀 Performance Optimization
+
+Include:
+- Background apps
+- Battery
+- Storage
+- Heating
+- RAM usage
+
+7. 🌐 Network / Ping
+
+Give simple tips for reducing connection-related lag.
+
+8. 🎮 Gameplay Tip
+
+Give a short sensitivity adjustment tip so the player can fine-tune the settings.
+
+Make the answer easy to read on a mobile phone.
+"""
+
+        with st.spinner("🔍 Analyzing device..."):
+
+            try:
+
+                client = get_groq_client()
+
+                response = client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": (
+                                "You are a responsible mobile gaming "
+                                "optimization assistant."
+                            )
+                        },
+                        {
+                            "role": "user",
+                            "content": prompt
+                        }
+                    ],
+                    temperature=0.3
+                )
+
+                result = response.choices[0].message.content
+
+                st.success("✅ Optimization Complete!")
+
+                st.markdown(result)
+
+            except Exception as e:
+
+                st.error(
+                    "❌ Optimizer failed. "
+                    "Please check your GROQ_API_KEY."
+                )
 
 
 # =========================================================
-# MAIN APP
+# HONORGPT CHAT
 # =========================================================
 
-def show_app():
+def honorgpt_chat():
 
-    with st.sidebar:
+    st.markdown("## 🤖 Honorgpt")
 
-        st.image("logo.jpg", width=80)
+    if st.button(
+        "🗑️ Clear Chat",
+        use_container_width=True
+    ):
 
-        st.write(
-            f"Admin: {st.session_state.user_data.email}"
-        )
+        st.session_state.chat_history = []
 
-        if st.button("+ New Chat"):
+        st.rerun()
 
-            st.session_state.chat_history = []
-            st.session_state.current_id = None
+    # Show previous messages
+    for message in st.session_state.chat_history:
 
-            st.rerun()
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
 
-        st.markdown("---")
-
-        # Load saved chats
-        try:
-
-            res = (
-                supabase
-                .table("chats")
-                .select("id, title")
-                .eq(
-                    "user_id",
-                    st.session_state.user_data.id
-                )
-                .order("id", desc=True)
-                .execute()
-            )
-
-            for chat in res.data:
-
-                if st.button(
-                    f"💬 {chat['title']}",
-                    key=f"c_{chat['id']}"
-                ):
-
-                    chat_data = (
-                        supabase
-                        .table("chats")
-                        .select("*")
-                        .eq("id", chat["id"])
-                        .execute()
-                    )
-
-                    if chat_data.data:
-
-                        st.session_state.chat_history = (
-                            chat_data.data[0]["messages"]
-                        )
-
-                        st.session_state.current_id = chat["id"]
-
-                        st.rerun()
-
-        except Exception:
-            pass
-
-        st.markdown("---")
-
-        if st.button("Logout"):
-
-            supabase.auth.sign_out()
-
-            st.session_state.user_data = None
-            st.session_state.chat_history = []
-            st.session_state.current_id = None
-
-            st.rerun()
-
-
-    # =====================================================
-    # HONORGPT
-    # =====================================================
-
-    st.markdown(
-        "<h1 class='centered-title'>Honorgpt</h1>",
-        unsafe_allow_html=True
+    # Chat input
+    prompt = st.chat_input(
+        "Ask Honorgpt..."
     )
 
-
-    # Display previous messages
-    for m in st.session_state.chat_history:
-
-        if m["role"] != "system":
-
-            with st.chat_message(
-                m["role"],
-                avatar=(
-                    ai_avatar
-                    if m["role"] == "assistant"
-                    else None
-                )
-            ):
-
-                st.markdown(m["content"])
-
-
-    # =====================================================
-    # CHAT
-    # =====================================================
-
-    if prompt := st.chat_input("Ask Honorgpt..."):
-
-        if not st.session_state.chat_history:
-
-            st.session_state.chat_history.append({
-                "role": "system",
-                "content": "You are Honorgpt."
-            })
-
+    if prompt:
 
         st.session_state.chat_history.append({
             "role": "user",
             "content": prompt
         })
 
-
         with st.chat_message("user"):
             st.markdown(prompt)
 
-
-        with st.chat_message(
-            "assistant",
-            avatar=ai_avatar
-        ):
-
-            full_res = ""
+        with st.chat_message("assistant"):
 
             placeholder = st.empty()
 
-            client = Groq(
-                api_key=st.secrets["GROQ_API_KEY"]
-            )
+            full_response = ""
 
-            for chunk in client.chat.completions.create(
+            try:
 
-                model="llama-3.3-70b-versatile",
+                client = get_groq_client()
 
-                messages=st.session_state.chat_history,
+                messages = [
+                    {
+                        "role": "system",
+                        "content": """
+You are Honorgpt.
 
-                stream=True
+You are a helpful AI assistant.
+You can communicate in Sinhala and English.
+Give clear, useful and honest answers.
+"""
+                    }
+                ]
 
-            ):
-
-                if chunk.choices[0].delta.content:
-
-                    full_res += (
-                        chunk.choices[0].delta.content
-                    )
-
-                    placeholder.markdown(
-                        full_res + "▌"
-                    )
-
-
-            placeholder.markdown(full_res)
-
-
-            st.session_state.chat_history.append({
-                "role": "assistant",
-                "content": full_res
-            })
-
-
-            # =================================================
-            # SAVE CHAT TO DATABASE
-            # =================================================
-
-            db_data = {
-
-                "user_id":
-                    st.session_state.user_data.id,
-
-                "messages":
-                    st.session_state.chat_history,
-
-                "title":
-                    prompt[:30]
-            }
-
-
-            if st.session_state.current_id:
-
-                (
-                    supabase
-                    .table("chats")
-                    .update(db_data)
-                    .eq(
-                        "id",
-                        st.session_state.current_id
-                    )
-                    .execute()
+                messages.extend(
+                    st.session_state.chat_history
                 )
 
-            else:
-
-                db_res = (
-                    supabase
-                    .table("chats")
-                    .insert(db_data)
-                    .execute()
+                stream = client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=messages,
+                    stream=True
                 )
 
-                if db_res.data:
+                for chunk in stream:
 
-                    st.session_state.current_id = (
-                        db_res.data[0]["id"]
-                    )
+                    if chunk.choices[0].delta.content:
+
+                        full_response += (
+                            chunk.choices[0].delta.content
+                        )
+
+                        placeholder.markdown(
+                            full_response + "▌"
+                        )
+
+                placeholder.markdown(
+                    full_response
+                )
+
+                st.session_state.chat_history.append({
+                    "role": "assistant",
+                    "content": full_response
+                })
+
+            except Exception as e:
+
+                st.error(
+                    "❌ AI connection failed. "
+                    "Please check your GROQ_API_KEY."
+                )
 
 
 # =========================================================
-# MAIN EXECUTION
+# HEADER
 # =========================================================
 
-if st.session_state.user_data is None:
+try:
 
-    show_auth()
+    st.image(
+        "logo.jpg",
+        width=100
+    )
 
-else:
+except Exception:
+    pass
 
-    show_app()
+
+st.markdown(
+    "<h1 class='centered-title'>Honorgpt</h1>",
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    "<p class='subtitle'>"
+    "AI Assistant • Free Fire Device Optimizer"
+    "</p>",
+    unsafe_allow_html=True
+)
+
+
+# =========================================================
+# TABS
+# =========================================================
+
+tab1, tab2 = st.tabs([
+    "🤖 Honorgpt",
+    "🎮 Free Fire Optimizer"
+])
+
+
+with tab1:
+    honorgpt_chat()
+
+
+with tab2:
+    free_fire_optimizer()
+
+
+# =========================================================
+# K!ngX SOCIAL LINKS
+# =========================================================
+
+st.markdown("""
+<div class="social-box">
+
+<h3>👑 K!ngX</h3>
+
+<a class="social-button"
+href="https://www.tiktok.com/@kingxfreestyles"
+target="_blank">
+🎵 TikTok
+</a>
+
+<a class="social-button"
+href="https://youtube.com/@king_x-only"
+target="_blank">
+▶️ YouTube
+</a>
+
+</div>
+""", unsafe_allow_html=True)
