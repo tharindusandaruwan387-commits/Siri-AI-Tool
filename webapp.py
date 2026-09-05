@@ -2,8 +2,9 @@ import streamlit as st
 from groq import Groq
 
 # ==============================
-# PAGE CONFIGURATION
+# PAGE SETTINGS
 # ==============================
+
 st.set_page_config(
     page_title="Honorgpt",
     page_icon="logo.jpg",
@@ -11,8 +12,9 @@ st.set_page_config(
 )
 
 # ==============================
-# SESSION STATE
+# SESSION
 # ==============================
+
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
@@ -20,6 +22,7 @@ if "chat_history" not in st.session_state:
 # ==============================
 # CSS
 # ==============================
+
 st.markdown("""
 <style>
 
@@ -54,7 +57,9 @@ st.markdown("""
 # ==============================
 # GROQ CLIENT
 # ==============================
+
 def get_groq_client():
+
     return Groq(
         api_key=st.secrets["GROQ_API_KEY"]
     )
@@ -63,24 +68,27 @@ def get_groq_client():
 # ==============================
 # FREE FIRE OPTIMIZER
 # ==============================
+
 def free_fire_optimizer():
 
     st.markdown("## 🎮 Free Fire Device Optimizer")
 
     st.write(
-        "ඔයාගේ phone model එක සහ RAM එක අනුව "
-        "Free Fire සඳහා suitable settings recommend කරමු."
+        "Phone model සහ RAM එක අනුව "
+        "Free Fire සඳහා suitable settings ලබාගන්න."
     )
 
     col1, col2 = st.columns(2)
 
     with col1:
+
         phone = st.text_input(
             "📱 Phone Model",
-            placeholder="Ex: Honor X5b"
+            placeholder="Example: Honor X5b"
         )
 
     with col2:
+
         ram = st.selectbox(
             "🧠 RAM",
             [
@@ -103,7 +111,7 @@ def free_fire_optimizer():
     )
 
     st.caption(
-        "💡 Resolution හෝ Refresh Rate වගේ technical details ඕන නැහැ."
+        "💡 Resolution හෝ Refresh Rate දැනගන්න ඕන නැහැ."
     )
 
     st.write("")
@@ -114,49 +122,56 @@ def free_fire_optimizer():
     ):
 
         if not phone.strip():
-            st.warning("📱 Please enter your phone model.")
+
+            st.warning(
+                "📱 Please enter your phone model."
+            )
+
             return
 
         prompt = f"""
 You are a responsible Free Fire Device Optimizer.
 
-User device:
+Device information:
+
 Phone Model: {phone}
 RAM: {ram}
 Game: {game}
 
-Create a realistic and useful gaming optimization guide.
+Create a realistic and useful Free Fire optimization guide.
 
-IMPORTANT RULES:
+IMPORTANT:
 
 - Do NOT ask for screen resolution.
 - Do NOT ask for refresh rate.
 - Do NOT require technical specifications.
 - If a specification is unknown, do not pretend it is known.
 - Base recommendations mainly on phone model and RAM.
-- Sensitivity values are recommendations, not guaranteed perfect values.
+- Sensitivity values are recommendations only.
 - Never promise automatic headshots.
 - Never promise zero recoil.
 - Never promise zero lag.
 
-Give the result with these sections:
+Use these sections:
 
 1. 📱 Device Performance
-Classify the device as:
+
+Classify the device:
+
 Low / Entry / Mid / High
 
-Explain briefly.
+Give a short explanation.
 
 2. 🎯 Free Fire Sensitivity
 
 Give recommended values for:
 
-- General
-- Red Dot
-- 2X Scope
-- 4X Scope
-- Sniper Scope
-- Free Look
+General
+Red Dot
+2X Scope
+4X Scope
+Sniper Scope
+Free Look
 
 Use the current Free Fire sensitivity scale appropriately.
 
@@ -170,39 +185,39 @@ Explain that DPI depends on touch preference and device display.
 
 Recommend:
 
-- Graphics
-- High FPS
-- Auto Scale
+Graphics
+High FPS
+Auto Scale
 
 5. ⚙️ Android Developer Options
 
-Only recommend useful and reasonably safe settings.
+Only recommend useful and reasonably safe gaming-related settings.
 
-For every setting provide:
+For each setting give:
 
-- Setting name
-- Recommended value
-- Short explanation
+Setting name
+Recommended value
+Short explanation
 
-Do NOT recommend risky or unnecessary developer settings.
+Do not recommend risky or unnecessary settings.
 
 6. 🚀 Performance Optimization
 
 Include:
 
-- Background apps
-- Battery
-- Storage
-- Heating
-- RAM usage
+Background apps
+Battery
+Storage
+Heating
+RAM usage
 
 7. 🌐 Network / Ping
 
-Give simple tips for reducing connection-related lag.
+Give simple tips for connection-related lag.
 
 8. 🎮 Gameplay Tip
 
-Give a short tip explaining how the user can fine-tune sensitivity after testing.
+Give a short tip explaining how to adjust sensitivity after testing.
 
 Make the answer easy to read on a mobile phone.
 """
@@ -214,13 +229,15 @@ Make the answer easy to read on a mobile phone.
                 client = get_groq_client()
 
                 response = client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
+
+                    model="llama-3.1-8b-instant",
+
                     messages=[
                         {
                             "role": "system",
                             "content": (
-                                "You are a responsible mobile gaming "
-                                "optimization assistant."
+                                "You are a responsible "
+                                "mobile gaming optimization assistant."
                             )
                         },
                         {
@@ -228,29 +245,34 @@ Make the answer easy to read on a mobile phone.
                             "content": prompt
                         }
                     ],
+
                     temperature=0.3
                 )
 
                 result = response.choices[0].message.content
 
-                st.success("✅ Optimization Complete!")
+                st.success(
+                    "✅ Optimization Complete!"
+                )
 
                 st.markdown(result)
 
             except Exception as e:
 
                 st.error(
-                    f"❌ Optimizer failed: {e}"
+                    f"❌ Optimizer Error: {e}"
                 )
 
 
 # ==============================
-# HONORGPT CHAT
+# HONORGPT
 # ==============================
+
 def honorgpt_chat():
 
     st.markdown("## 🤖 Honorgpt")
 
+    # Clear chat
     if st.button(
         "🗑️ Clear Chat",
         use_container_width=True
@@ -260,23 +282,25 @@ def honorgpt_chat():
 
         st.rerun()
 
-    # Show previous messages
+    # Previous messages
     for message in st.session_state.chat_history:
 
-        with st.chat_message(message["role"]):
+        with st.chat_message(
+            message["role"]
+        ):
 
             st.markdown(
                 message["content"]
             )
 
-    # Chat input
+    # User input
     prompt = st.chat_input(
         "Ask Honorgpt..."
     )
 
     if prompt:
 
-        # Save user message
+        # Add user message
         st.session_state.chat_history.append(
             {
                 "role": "user",
@@ -288,6 +312,7 @@ def honorgpt_chat():
 
             st.markdown(prompt)
 
+        # AI response
         with st.chat_message("assistant"):
 
             placeholder = st.empty()
@@ -320,14 +345,20 @@ Do not make up information.
                 )
 
                 stream = client.chat.completions.create(
-                    model="llama-3.3-70b-versatile",
+
+                    model="llama-3.1-8b-instant",
+
                     messages=messages,
+
                     stream=True
                 )
 
                 for chunk in stream:
 
-                    if chunk.choices[0].delta.content:
+                    if (
+                        chunk.choices
+                        and chunk.choices[0].delta.content
+                    ):
 
                         full_response += (
                             chunk.choices[0].delta.content
@@ -341,7 +372,7 @@ Do not make up information.
                     full_response
                 )
 
-                # Save AI response
+                # Save response
                 st.session_state.chat_history.append(
                     {
                         "role": "assistant",
@@ -352,13 +383,14 @@ Do not make up information.
             except Exception as e:
 
                 st.error(
-                    f"❌ AI connection failed: {e}"
+                    f"❌ AI Connection Error: {e}"
                 )
 
 
 # ==============================
 # LOGO
 # ==============================
+
 try:
 
     st.image(
@@ -374,6 +406,7 @@ except Exception:
 # ==============================
 # HEADER
 # ==============================
+
 st.markdown(
     "<h1 class='centered-title'>Honorgpt</h1>",
     unsafe_allow_html=True
@@ -388,6 +421,7 @@ st.markdown(
 # ==============================
 # TABS
 # ==============================
+
 tab1, tab2 = st.tabs(
     [
         "🤖 Honorgpt",
@@ -396,13 +430,19 @@ tab1, tab2 = st.tabs(
 )
 
 
-# Honorgpt
+# ==============================
+# HONORGPT TAB
+# ==============================
+
 with tab1:
 
     honorgpt_chat()
 
 
-# Free Fire Optimizer
+# ==============================
+# FREE FIRE OPTIMIZER TAB
+# ==============================
+
 with tab2:
 
     free_fire_optimizer()
