@@ -349,8 +349,7 @@ Give clear, useful and honest answers.
                 })
 
             except Exception as e:
-    st.error(f"❌ AI connection failed: {e}"
-                )
+    st.error(f"❌ AI connection failed: {e}")
 
 
 # =========================================================
