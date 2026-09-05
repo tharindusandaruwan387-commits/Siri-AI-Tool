@@ -89,8 +89,7 @@ def free_fire_optimizer():
     st.markdown("## 🎮 Free Fire Device Optimizer")
 
     st.write(
-        "ඔයාගේ phone model එක සහ RAM එක දුන්නාම, "
-        "Free Fire සඳහා ගැළපෙන settings recommend කරමු."
+        "If you provide your phone model and RAM, we can recommend suitable settings for Free Fire."
     )
 
     col1, col2 = st.columns(2)
