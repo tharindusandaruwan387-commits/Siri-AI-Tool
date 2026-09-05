@@ -349,10 +349,7 @@ Give clear, useful and honest answers.
                 })
 
             except Exception as e:
-
-                st.error(
-                    "❌ AI connection failed. "
-                    "Please check your GROQ_API_KEY."
+    st.error(f"❌ AI connection failed: {e}")
                 )
 
 
