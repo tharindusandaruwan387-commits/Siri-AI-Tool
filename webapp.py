@@ -327,31 +327,19 @@ Give clear, useful and honest answers.
                     stream=True
                 )
 
-                for chunk in stream:
-
+for chunk in stream:
                     if chunk.choices[0].delta.content:
+                        full_response += chunk.choices[0].delta.content
+                        placeholder.markdown(full_response + "▌")
 
-                        full_response += (
-                            chunk.choices[0].delta.content
-                        )
-
-                        placeholder.markdown(
-                            full_response + "▌"
-                        )
-
-                placeholder.markdown(
-                    full_response
-                )
-
+                placeholder.markdown(full_response)
                 st.session_state.chat_history.append({
                     "role": "assistant",
                     "content": full_response
                 })
 
             except Exception as e:
-                st.error(f"❌ AI connection failed: 
-{e}")
-
+                st.error(f"❌ AI connection failed: {e}")
 
 # =========================================================
 # HEADER
